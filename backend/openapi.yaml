@@ -9,13 +9,13 @@ paths:
       summary: Get current session
       tags: [Session]
       responses:
-        '200':
+        "200":
           description: Current session info
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Session'
-        '401':
+                $ref: "#/components/schemas/Session"
+        "401":
           description: Not authenticated
 
   /session/login:
@@ -27,15 +27,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              $ref: "#/components/schemas/LoginRequest"
       responses:
-        '200':
+        "200":
           description: Login successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Session'
-        '401':
+                $ref: "#/components/schemas/Session"
+        "401":
           description: Invalid credentials
 
   /session/logout:
@@ -43,9 +43,9 @@ paths:
       summary: Log out
       tags: [Session]
       responses:
-        '204':
+        "204":
           description: Logged out successfully
-        '401':
+        "401":
           description: Not authenticated
 
   /documents/upload:
@@ -64,15 +64,15 @@ paths:
                   format: binary
               required: [file]
       responses:
-        '201':
+        "201":
           description: Document uploaded
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Document'
-        '400':
+                $ref: "#/components/schemas/Document"
+        "400":
           description: Invalid request
-        '401':
+        "401":
           description: Not authenticated
 
   /documents/{documentId}:
@@ -86,11 +86,11 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Document deleted
-        '401':
+        "401":
           description: Not authenticated
-        '404':
+        "404":
           description: Document not found
 
   /discounts:
@@ -98,15 +98,15 @@ paths:
       summary: List available discounts
       tags: [Discounts]
       responses:
-        '200':
+        "200":
           description: List of discounts
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Discount'
-        '401':
+                  $ref: "#/components/schemas/Discount"
+        "401":
           description: Not authenticated
 
 components:
