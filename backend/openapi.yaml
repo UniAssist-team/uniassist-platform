@@ -1,0 +1,157 @@
+openapi: 3.0.3
+info:
+  title: UniAssist Platform API
+  version: 1.0.0
+
+paths:
+  /session:
+    get:
+      summary: Get current session
+      tags: [Session]
+      responses:
+        '200':
+          description: Current session info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          description: Not authenticated
+
+  /session/login:
+    post:
+      summary: Log in
+      tags: [Session]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          description: Invalid credentials
+
+  /session/logout:
+    post:
+      summary: Log out
+      tags: [Session]
+      responses:
+        '204':
+          description: Logged out successfully
+        '401':
+          description: Not authenticated
+
+  /documents/upload:
+    post:
+      summary: Upload a document
+      tags: [Documents]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required: [file]
+      responses:
+        '201':
+          description: Document uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: Invalid request
+        '401':
+          description: Not authenticated
+
+  /documents/{documentId}:
+    delete:
+      summary: Delete a document
+      tags: [Documents]
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Document deleted
+        '401':
+          description: Not authenticated
+        '404':
+          description: Document not found
+
+  /discounts:
+    get:
+      summary: List available discounts
+      tags: [Discounts]
+      responses:
+        '200':
+          description: List of discounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Discount'
+        '401':
+          description: Not authenticated
+
+components:
+  schemas:
+    Session:
+      type: object
+      properties:
+        userId:
+          type: string
+        email:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+        filename:
+          type: string
+        uploadedAt:
+          type: string
+          format: date-time
+
+    Discount:
+      type: object
+      properties:
+        id:
+          type: string
+        description:
+          type: string
+        amount:
+          type: number
+        unit:
+          type: string
+          enum: [percent, fixed]
