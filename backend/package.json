@@ -9,7 +9,10 @@
   "scripts": {
     "dev": "node --watch --env-file=.env .",
     "format": "npx @biomejs/biome format --write ./src",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "infra:up": "docker compose -f docker-compose.yml up -d",
+    "infra:down": "docker compose -f docker-compose.yml down",
+    "infra:reset": "docker compose -f docker-compose.yml down -v"
   },
   "dependencies": {
     "express": "^5.2.1",
