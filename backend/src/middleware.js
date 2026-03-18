@@ -20,13 +20,24 @@ export function requestLogger(req, res, next) {
 }
 
 /**
+ * @param {Error} err
+ * @param {Request} req
+ * @param {Response} res
+ * @param {NextFunction} _next
+ */
+export function errorHandler(err, req, res, _next) {
+	console.error(`${req.method} ${req.url} - Unhandled error:\n`, err);
+	res.sendStatus(500);
+}
+
+/**
  * @param {Request} req
  * @param {Response} res
  * @param {NextFunction} next
  */
 export function requireAuth(req, res, next) {
 	if (!req.session || !req.session.userId) {
-        return res.sendStatus(401);
-    }
+		return res.sendStatus(401);
+	}
 	next();
 }

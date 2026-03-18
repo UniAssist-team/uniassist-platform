@@ -13,7 +13,9 @@ router.post(
 	requireAuth,
 	upload.single("file"),
 	async (req, res) => {
-		if (!req.file) return res.status(400).json({ message: "No file provided" });
+		if (!req.file) {
+			return res.status(400).json({ message: "No file provided" });
+		}
 
 		const [doc] = await db("documents")
 			.insert({

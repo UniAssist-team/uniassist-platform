@@ -3,7 +3,7 @@ import { serve, setup } from "swagger-ui-express";
 import { readFileSync } from "fs";
 import { load } from "js-yaml";
 import db from "./db.js";
-import { requestLogger } from "./middleware.js";
+import { requestLogger, errorHandler } from "./middleware.js";
 import sessionsRouter from "./routers/sessions.js";
 import discountsRouter from "./routers/discounts.js";
 import documentsRouter from "./routers/documents.js";
@@ -13,10 +13,12 @@ const swaggerDocument = load(readFileSync("./openapi.yaml", "utf8"));
 const app = express();
 
 app.use(requestLogger);
+app.use(express.json());
 app.use("/docs", serve, setup(swaggerDocument));
 app.use("/", sessionsRouter);
 app.use("/", discountsRouter);
 app.use("/", documentsRouter);
+app.use(errorHandler);
 
 const port = process.env.PORT || 3001;
 
