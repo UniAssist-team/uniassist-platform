@@ -1,12 +1,11 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
 import db from "../db.js";
+import { requireAuth } from "../middleware.js";
 
 const router = Router();
 
-router.get("/session", (req, res) => {
-	if (!req.session.userId) return res.sendStatus(401);
-
+router.get("/session", requireAuth, (req, res) => {
 	res.json({
 		userId: req.session.userId,
 		email: req.session.email,
