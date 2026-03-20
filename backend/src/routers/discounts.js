@@ -1,19 +1,19 @@
 import { Router } from "express";
 import db from "../db.js";
+import { requireAuth } from "../middleware.js";
 
 const router = Router();
 
-router.get("/discounts", async (req, res) => {
-	if (!req.session.userId) return res.sendStatus(401);
-
+router.get("/discounts", requireAuth, async (req, res) => {
 	const rows = await db("discounts").select("*");
 
 	res.json(
 		rows.map((r) => ({
 			id: r.id,
+			name: r.name,
 			description: r.description,
-			amount: Number(r.amount),
-			unit: r.unit,
+			requiredDocuments: r.required_documents,
+			benefits: r.benefits,
 		})),
 	);
 });

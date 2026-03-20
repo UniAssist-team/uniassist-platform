@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import path from "path";
 import { Router } from "express";
 // TODO: replace multer with S3-compatible storage (MinIO)
 import multer from "multer";
@@ -8,6 +9,23 @@ import { requireAuth } from "../middleware.js";
 
 const upload = multer({ dest: "uploads/" });
 const router = Router();
+
+router.get("/documents", requireAuth, async (req, res) => {
+	const docs = await db("documents")
+		.where({ user_id: req.user.id })
+		.select("id", "filename", "uploaded_at as uploadedAt");
+	res.json(docs);
+});
+
+router.get("/documents/:documentId/file", requireAuth, async (req, res) => {
+	const doc = await db("documents")
+		.where({ id: req.params.documentId, user_id: req.user.id })
+		.first();
+
+	if (!doc) return res.sendStatus(404);
+
+	res.download(path.resolve(doc.storage_path), doc.filename);
+});
 
 router.post(
 	"/documents/upload",
