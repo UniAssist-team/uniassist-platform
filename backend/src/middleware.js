@@ -1,3 +1,5 @@
+import db from "./db.js";
+
 /** @typedef {import('express').Request} Request */
 /** @typedef {import('express').Response} Response */
 /** @typedef {import('express').NextFunction} NextFunction */
@@ -35,9 +37,39 @@ export function errorHandler(err, req, res, _next) {
  * @param {Response} res
  * @param {NextFunction} next
  */
-export function requireAuth(req, res, next) {
-	if (!req.session || !req.session.userId) {
+export async function requireAuth(req, res, next) {
+	const header = req.headers.authorization;
+	if (!header || !header.startsWith("Bearer ")) {
 		return res.sendStatus(401);
 	}
+
+	const token = header.slice(7);
+	const session = await db("sessions")
+		.where({ token })
+		.where("expires_at", ">", new Date())
+		.first();
+
+	if (!session) {
+		return res.sendStatus(401);
+	}
+
+	const user = await db("users").where({ id: session.user_id }).first();
+	if (!user) {
+		return res.sendStatus(401);
+	}
+
+	req.user = { id: user.id, email: user.email, role: user.role };
 	next();
+}
+
+/**
+ * @param {...string} roles
+ */
+export function requireRole(...roles) {
+	return (req, res, next) => {
+		if (!req.user || !roles.includes(req.user.role)) {
+			return res.sendStatus(403);
+		}
+		next();
+	};
 }

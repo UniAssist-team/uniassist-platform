@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { Router } from "express";
 // TODO: replace multer with S3-compatible storage (MinIO)
 import multer from "multer";
@@ -17,13 +18,15 @@ router.post(
 			return res.status(400).json({ message: "No file provided" });
 		}
 
-		const [doc] = await db("documents")
-			.insert({
-				user_id: req.session.userId,
-				filename: req.file.originalname,
-				storage_path: req.file.path,
-			})
-			.returning("*");
+		const id = randomUUID();
+		await db("documents").insert({
+			id,
+			user_id: req.user.id,
+			filename: req.file.originalname,
+			storage_path: req.file.path,
+		});
+
+		const doc = await db("documents").where({ id }).first();
 
 		res.status(201).json({
 			id: doc.id,
@@ -35,7 +38,7 @@ router.post(
 
 router.delete("/documents/:documentId", requireAuth, async (req, res) => {
 	const doc = await db("documents")
-		.where({ id: req.params.documentId, user_id: req.session.userId })
+		.where({ id: req.params.documentId, user_id: req.user.id })
 		.first();
 
 	if (!doc) return res.sendStatus(404);

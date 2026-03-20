@@ -8,13 +8,15 @@ paths:
     get:
       summary: Get current session
       tags: [Session]
+      security:
+        - BearerAuth: []
       responses:
         "200":
-          description: Current session info
+          description: Current user info
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Session"
+                $ref: "#/components/schemas/User"
         "401":
           description: Not authenticated
 
@@ -34,7 +36,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Session"
+                $ref: "#/components/schemas/LoginResponse"
         "401":
           description: Invalid credentials
 
@@ -42,6 +44,8 @@ paths:
     post:
       summary: Log out
       tags: [Session]
+      security:
+        - BearerAuth: []
       responses:
         "204":
           description: Logged out successfully
@@ -52,6 +56,8 @@ paths:
     post:
       summary: Upload a document
       tags: [Documents]
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -79,6 +85,8 @@ paths:
     delete:
       summary: Delete a document
       tags: [Documents]
+      security:
+        - BearerAuth: []
       parameters:
         - name: documentId
           in: path
@@ -97,6 +105,8 @@ paths:
     get:
       summary: List available discounts
       tags: [Discounts]
+      security:
+        - BearerAuth: []
       responses:
         "200":
           description: List of discounts
@@ -110,17 +120,22 @@ paths:
           description: Not authenticated
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
   schemas:
-    Session:
+    User:
       type: object
       properties:
-        userId:
+        id:
           type: string
         email:
           type: string
-        createdAt:
+        role:
           type: string
-          format: date-time
+          enum: [student, admin, root]
 
     LoginRequest:
       type: object
@@ -131,6 +146,14 @@ components:
           format: email
         password:
           type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
 
     Document:
       type: object
