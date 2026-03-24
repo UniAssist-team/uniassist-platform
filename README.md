@@ -2,7 +2,7 @@
 
 ## Setup steps
 
-Clone the repo
+Install node.js, clone the repo
 ```
 git clone <repository-url>
 ```
