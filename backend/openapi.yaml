@@ -8,14 +8,16 @@ paths:
     get:
       summary: Get current session
       tags: [Session]
+      security:
+        - BearerAuth: []
       responses:
-        '200':
-          description: Current session info
+        "200":
+          description: Current user info
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Session'
-        '401':
+                $ref: "#/components/schemas/User"
+        "401":
           description: Not authenticated
 
   /session/login:
@@ -27,31 +29,53 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              $ref: "#/components/schemas/LoginRequest"
       responses:
-        '200':
+        "200":
           description: Login successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Session'
-        '401':
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
           description: Invalid credentials
 
   /session/logout:
     post:
       summary: Log out
       tags: [Session]
+      security:
+        - BearerAuth: []
       responses:
-        '204':
+        "204":
           description: Logged out successfully
-        '401':
+        "401":
+          description: Not authenticated
+
+  /documents:
+    get:
+      summary: List user's documents
+      tags: [Documents]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Document"
+        "401":
           description: Not authenticated
 
   /documents/upload:
     post:
       summary: Upload a document
       tags: [Documents]
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -64,21 +88,23 @@ paths:
                   format: binary
               required: [file]
       responses:
-        '201':
+        "201":
           description: Document uploaded
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Document'
-        '400':
+                $ref: "#/components/schemas/Document"
+        "400":
           description: Invalid request
-        '401':
+        "401":
           description: Not authenticated
 
-  /documents/{documentId}:
-    delete:
-      summary: Delete a document
+  /documents/{documentId}/file:
+    get:
+      summary: Download a document file
       tags: [Documents]
+      security:
+        - BearerAuth: []
       parameters:
         - name: documentId
           in: path
@@ -86,41 +112,197 @@ paths:
           schema:
             type: string
       responses:
-        '204':
-          description: Document deleted
-        '401':
+        "200":
+          description: The document file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
           description: Not authenticated
-        '404':
+        "404":
+          description: Document not found
+
+  /documents/{documentId}:
+    delete:
+      summary: Delete a document
+      tags: [Documents]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Document deleted
+        "401":
+          description: Not authenticated
+        "404":
           description: Document not found
 
   /discounts:
     get:
       summary: List available discounts
       tags: [Discounts]
+      security:
+        - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: List of discounts
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Discount'
-        '401':
+                  $ref: "#/components/schemas/Discount"
+        "401":
           description: Not authenticated
 
+  /applications:
+    get:
+      summary: List user's applications
+      tags: [Applications]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApplicationSummary"
+        "401":
+          description: Not authenticated
+    post:
+      summary: Create a discount application
+      tags: [Applications]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateApplicationRequest"
+      responses:
+        "201":
+          description: Application created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationSummary"
+        "400":
+          description: Invalid request
+        "401":
+          description: Not authenticated
+
+  /applications/{id}:
+    get:
+      summary: Get application details
+      tags: [Applications]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Application details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationDetail"
+        "401":
+          description: Not authenticated
+        "404":
+          description: Application not found
+
+  /admin/applications:
+    get:
+      summary: List all applications (admin)
+      tags: [Admin]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected]
+      responses:
+        "200":
+          description: List of all applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminApplicationSummary"
+        "401":
+          description: Not authenticated
+        "403":
+          description: Forbidden
+
+  /admin/applications/{id}:
+    patch:
+      summary: Review an application (admin)
+      tags: [Admin]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewApplicationRequest"
+      responses:
+        "200":
+          description: Application reviewed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewedApplication"
+        "400":
+          description: Invalid status
+        "401":
+          description: Not authenticated
+        "403":
+          description: Forbidden
+        "404":
+          description: Application not found
+
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
   schemas:
-    Session:
+    User:
       type: object
       properties:
-        userId:
+        id:
           type: string
         email:
           type: string
-        createdAt:
+        role:
           type: string
-          format: date-time
+          enum: [student, admin, root]
 
     LoginRequest:
       type: object
@@ -131,6 +313,14 @@ components:
           format: email
         password:
           type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
 
     Document:
       type: object
@@ -148,10 +338,95 @@ components:
       properties:
         id:
           type: string
+        name:
+          type: string
         description:
           type: string
-        amount:
-          type: number
-        unit:
+        requiredDocuments:
           type: string
-          enum: [percent, fixed]
+        benefits:
+          type: string
+
+    CreateApplicationRequest:
+      type: object
+      required: [discountId, documentIds]
+      properties:
+        discountId:
+          type: string
+        documentIds:
+          type: array
+          items:
+            type: string
+
+    ApplicationSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        discountId:
+          type: string
+        discountName:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        reviewNote:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ApplicationDetail:
+      allOf:
+        - $ref: "#/components/schemas/ApplicationSummary"
+        - type: object
+          properties:
+            discountDescription:
+              type: string
+            benefits:
+              type: string
+            documents:
+              type: array
+              items:
+                $ref: "#/components/schemas/Document"
+
+    AdminApplicationSummary:
+      allOf:
+        - $ref: "#/components/schemas/ApplicationSummary"
+        - type: object
+          properties:
+            userId:
+              type: string
+            userEmail:
+              type: string
+
+    ReviewApplicationRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [approved, rejected]
+        reviewNote:
+          type: string
+
+    ReviewedApplication:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [approved, rejected]
+        reviewNote:
+          type: string
+          nullable: true
+        reviewedBy:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
