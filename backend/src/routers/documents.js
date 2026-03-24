@@ -45,6 +45,7 @@ router.post(
 		});
 
 		const doc = await db("documents").where({ id }).first();
+        // TODO: AI processing
 
 		res.status(201).json({
 			id: doc.id,
