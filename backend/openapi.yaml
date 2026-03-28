@@ -20,6 +20,28 @@ paths:
         "401":
           description: Not authenticated
 
+  /session/register:
+    post:
+      summary: Register a new student account
+      tags: [Session]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          description: Missing email or password
+        "409":
+          description: Email already registered
+
   /session/login:
     post:
       summary: Log in
@@ -303,6 +325,16 @@ components:
         role:
           type: string
           enum: [student, admin, root]
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
 
     LoginRequest:
       type: object
