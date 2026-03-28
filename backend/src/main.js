@@ -1,30 +1,14 @@
-import express from "express";
 import { serve, setup } from "swagger-ui-express";
 import { readFileSync } from "fs";
 import { load } from "js-yaml";
 import { randomUUID } from "crypto";
 import db from "./db.js";
 import { hashPassword } from "./crypto.js";
-import { requestLogger, errorHandler } from "./middleware.js";
-import sessionsRouter from "./routers/sessions.js";
-import discountsRouter from "./routers/discounts.js";
-import documentsRouter from "./routers/documents.js";
-import applicationsRouter from "./routers/applications.js";
-import adminRouter from "./routers/admin.js";
+import app from "./app.js";
 
-const swaggerDocument = load(readFileSync("./openapi.yaml", "utf8"));
+const swaggerDocument = /** @type {import("swagger-ui-express").JsonObject} */ (load(readFileSync("./openapi.yaml", "utf8")));
 
-const app = express();
-
-app.use(requestLogger);
-app.use(express.json());
 app.use("/docs", serve, setup(swaggerDocument));
-app.use("/", sessionsRouter);
-app.use("/", discountsRouter);
-app.use("/", documentsRouter);
-app.use("/", applicationsRouter);
-app.use("/", adminRouter);
-app.use(errorHandler);
 
 const port = process.env.PORT || 3001;
 

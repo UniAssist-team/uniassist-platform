@@ -10,6 +10,7 @@ const db = knex({
 		directory: "./src/migrations",
 	},
 	pool: {
+		/** @param {import("better-sqlite3").Database} conn @param {(err?: Error | null) => void} done */
 		afterCreate(conn, done) {
 			conn.pragma("journal_mode = WAL");
 			conn.pragma("foreign_keys = ON");

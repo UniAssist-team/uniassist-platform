@@ -46,7 +46,7 @@ export async function requireAuth(req, res, next) {
 	const token = header.slice(7);
 	const session = await db("sessions")
 		.where({ token })
-		.where("expires_at", ">", new Date())
+		.where("expires_at", ">", new Date().toISOString())
 		.first();
 
 	if (!session) {
@@ -66,6 +66,7 @@ export async function requireAuth(req, res, next) {
  * @param {...string} roles
  */
 export function requireRole(...roles) {
+	/** @param {Request} req @param {Response} res @param {NextFunction} next */
 	return (req, res, next) => {
 		if (!req.user || !roles.includes(req.user.role)) {
 			return res.sendStatus(403);

@@ -74,7 +74,7 @@ router.post("/applications", requireAuth, async (req, res) => {
 	});
 
 	await db("application_documents").insert(
-		documentIds.map((documentId) => ({
+		documentIds.map(/** @param {string} documentId */ (documentId) => ({
 			application_id: id,
 			document_id: documentId,
 		})),
