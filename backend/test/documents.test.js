@@ -35,9 +35,10 @@ describe("POST /documents/upload", () => {
 		expect(res.status).toBe(201);
 		expect(res.body.id).toBeDefined();
 		expect(res.body.filename).toBe("test.pdf");
+		expect(res.body.uploadedAt).toBeDefined();
 	});
 
-	it("returns 400 without a file", async () => {
+	it("returns 415 without multipart content type", async () => {
 		const user = await createUser();
 		const token = await createSession(user.id);
 
@@ -45,7 +46,7 @@ describe("POST /documents/upload", () => {
 			.post("/documents/upload")
 			.set("Authorization", `Bearer ${token}`);
 
-		expect(res.status).toBe(400);
+		expect(res.status).toBe(415);
 	});
 
 	it("returns 401 without auth", async () => {

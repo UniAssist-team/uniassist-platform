@@ -1,20 +1,18 @@
 import { randomUUID } from "crypto";
 import path from "path";
 import { Router } from "express";
-// TODO: replace multer with S3-compatible storage (MinIO)
-import multer from "multer";
 import fs from "fs/promises";
 import db from "../db.js";
 import { requireAuth } from "../middleware.js";
+import { toISO } from "../format.js";
 
-const upload = multer({ dest: "uploads/" });
 const router = Router();
 
 router.get("/documents", requireAuth, async (req, res) => {
 	const docs = await db("documents")
 		.where({ user_id: req.user.id })
 		.select("id", "filename", "uploaded_at as uploadedAt");
-	res.json(docs);
+	res.json(docs.map((d) => ({ ...d, uploadedAt: toISO(d.uploadedAt) })));
 });
 
 router.get("/documents/:documentId/file", requireAuth, async (req, res) => {
@@ -30,9 +28,9 @@ router.get("/documents/:documentId/file", requireAuth, async (req, res) => {
 router.post(
 	"/documents/upload",
 	requireAuth,
-	upload.single("file"),
 	async (req, res) => {
-		if (!req.file) {
+		const file = /** @type {Express.Multer.File | undefined} */ (Array.isArray(req.files) ? req.files[0] : req.file);
+		if (!file) {
 			return res.status(400).json({ message: "No file provided" });
 		}
 
@@ -40,8 +38,8 @@ router.post(
 		await db("documents").insert({
 			id,
 			user_id: req.user.id,
-			filename: req.file.originalname,
-			storage_path: req.file.path,
+			filename: file.originalname,
+			storage_path: file.path,
 		});
 
 		const doc = await db("documents").where({ id }).first();
@@ -50,7 +48,7 @@ router.post(
 		res.status(201).json({
 			id: doc.id,
 			filename: doc.filename,
-			uploadedAt: doc.uploaded_at,
+			uploadedAt: toISO(doc.uploaded_at),
 		});
 	},
 );

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import db from "../db.js";
 import { requireAuth, requireRole } from "../middleware.js";
+import { toISO } from "../format.js";
 
 const router = Router();
 
@@ -25,7 +26,7 @@ router.get("/admin/applications", requireAuth, requireRole("admin", "root"), asy
 	}
 
 	const applications = await query;
-	res.json(applications);
+	res.json(applications.map((a) => ({ ...a, createdAt: toISO(a.createdAt), updatedAt: toISO(a.updatedAt) })));
 });
 
 router.patch("/admin/applications/:id", requireAuth, requireRole("admin", "root"), async (req, res) => {
@@ -52,7 +53,7 @@ router.patch("/admin/applications/:id", requireAuth, requireRole("admin", "root"
 		status: updated.status,
 		reviewNote: updated.review_note,
 		reviewedBy: updated.reviewed_by,
-		updatedAt: updated.updated_at,
+		updatedAt: toISO(updated.updated_at),
 	});
 });
 

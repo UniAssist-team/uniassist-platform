@@ -118,6 +118,10 @@ paths:
                 $ref: "#/components/schemas/Document"
         "400":
           description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Not authenticated
 
@@ -221,6 +225,10 @@ paths:
                 $ref: "#/components/schemas/ApplicationSummary"
         "400":
           description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Not authenticated
 
@@ -301,6 +309,10 @@ paths:
                 $ref: "#/components/schemas/ReviewedApplication"
         "400":
           description: Invalid status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Not authenticated
         "403":
@@ -444,6 +456,12 @@ components:
           type: string
           enum: [approved, rejected]
         reviewNote:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
           type: string
 
     ReviewedApplication:

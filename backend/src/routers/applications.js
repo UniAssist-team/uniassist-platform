@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { Router } from "express";
 import db from "../db.js";
 import { requireAuth } from "../middleware.js";
+import { toISO } from "../format.js";
 
 const router = Router();
 
@@ -19,7 +20,7 @@ router.get("/applications", requireAuth, async (req, res) => {
 			"discounts.name as discountName",
 		);
 
-	res.json(applications);
+	res.json(applications.map((a) => ({ ...a, createdAt: toISO(a.createdAt), updatedAt: toISO(a.updatedAt) })));
 });
 
 router.get("/applications/:id", requireAuth, async (req, res) => {
@@ -46,7 +47,12 @@ router.get("/applications/:id", requireAuth, async (req, res) => {
 		.join("documents", "application_documents.document_id", "documents.id")
 		.select("documents.id", "documents.filename", "documents.uploaded_at as uploadedAt");
 
-	res.json({ ...application, documents });
+	res.json({
+		...application,
+		createdAt: toISO(application.createdAt),
+		updatedAt: toISO(application.updatedAt),
+		documents: documents.map((d) => ({ ...d, uploadedAt: toISO(d.uploadedAt) })),
+	});
 });
 
 router.post("/applications", requireAuth, async (req, res) => {
@@ -86,7 +92,7 @@ router.post("/applications", requireAuth, async (req, res) => {
 		id: application.id,
 		discountId: application.discount_id,
 		status: application.status,
-		createdAt: application.created_at,
+		createdAt: toISO(application.created_at),
 	});
 });
 

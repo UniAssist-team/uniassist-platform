@@ -22,14 +22,20 @@ export function requestLogger(req, res, next) {
 }
 
 /**
- * @param {Error} err
+ * @param {Error & { status?: number, errors?: unknown[] }} err
  * @param {Request} req
  * @param {Response} res
  * @param {NextFunction} _next
  */
 export function errorHandler(err, req, res, _next) {
-	console.error(`${req.method} ${req.url} - Unhandled error:\n`, err);
-	res.sendStatus(500);
+	const status = err.status || 500;
+	if (status >= 500) {
+		console.error(`${req.method} ${req.url} - Unhandled error:\n`, err);
+	}
+	res.status(status).json({
+		message: err.message,
+		errors: err.errors,
+	});
 }
 
 /**
