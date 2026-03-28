@@ -7,7 +7,7 @@
   "type": "module",
   "main": "src/main.js",
   "scripts": {
-    "dev": "node --watch --env-file=.env .",
+    "dev": "node --watch --env-file-if-exists=.env .",
     "format": "npx @biomejs/biome format --write ./src",
     "typecheck": "tsc",
     "test": "DATABASE_PATH=:memory: vitest run",
