@@ -25,33 +25,31 @@ router.get("/documents/:documentId/file", requireAuth, async (req, res) => {
 	res.download(path.resolve(doc.storage_path), doc.filename);
 });
 
-router.post(
-	"/documents/upload",
-	requireAuth,
-	async (req, res) => {
-		const file = /** @type {Express.Multer.File | undefined} */ (Array.isArray(req.files) ? req.files[0] : req.file);
-		if (!file) {
-			return res.status(400).json({ message: "No file provided" });
-		}
+router.post("/documents/upload", requireAuth, async (req, res) => {
+	const file = /** @type {Express.Multer.File | undefined} */ (
+		Array.isArray(req.files) ? req.files[0] : req.file
+	);
+	if (!file) {
+		return res.status(400).json({ message: "No file provided" });
+	}
 
-		const id = randomUUID();
-		await db("documents").insert({
-			id,
-			user_id: req.user.id,
-			filename: file.originalname,
-			storage_path: file.path,
-		});
+	const id = randomUUID();
+	await db("documents").insert({
+		id,
+		user_id: req.user.id,
+		filename: file.originalname,
+		storage_path: file.path,
+	});
 
-		const doc = await db("documents").where({ id }).first();
-        // TODO: AI processing
+	const doc = await db("documents").where({ id }).first();
+	// TODO: AI processing
 
-		res.status(201).json({
-			id: doc.id,
-			filename: doc.filename,
-			uploadedAt: toISO(doc.uploaded_at),
-		});
-	},
-);
+	res.status(201).json({
+		id: doc.id,
+		filename: doc.filename,
+		uploadedAt: toISO(doc.uploaded_at),
+	});
+});
 
 router.delete("/documents/:documentId", requireAuth, async (req, res) => {
 	const doc = await db("documents")

@@ -8,11 +8,14 @@ export async function seed(knex) {
 	const adminExists = await knex("users").where({ role: "admin" }).first();
 	if (adminExists) return;
 
+	const email = process.env.ADMIN_EMAIL || "admin@example.com";
+	const password = process.env.ADMIN_PASSWORD || "admin";
+
 	await knex("users").insert({
 		id: randomUUID(),
-		email: "admin@example.com",
-		password_hash: await hashPassword("admin"),
+		email,
+		password_hash: await hashPassword(password),
 		role: "admin",
 	});
-	console.log("Admin seeded (admin@example.com / admin)");
+	console.log(`Admin seeded (${email})`);
 }

@@ -5,7 +5,6 @@ export function up(knex) {
 	return knex.schema
 		.createTable("users", (t) => {
 			t.uuid("id").primary();
-			t.string("name");
 			t.string("email").notNullable().unique();
 			t.string("password_hash").notNullable();
 			t.string("role").notNullable().defaultTo("student");
@@ -53,7 +52,10 @@ export function up(knex) {
 				.inTable("discounts")
 				.onDelete("CASCADE");
 			t.string("status").notNullable().defaultTo("pending");
-			t.uuid("reviewed_by").references("id").inTable("users").onDelete("SET NULL");
+			t.uuid("reviewed_by")
+				.references("id")
+				.inTable("users")
+				.onDelete("SET NULL");
 			t.string("review_note");
 			t.timestamp("created_at").defaultTo(knex.fn.now());
 			t.timestamp("updated_at").defaultTo(knex.fn.now());

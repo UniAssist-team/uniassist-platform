@@ -20,12 +20,21 @@ router.get("/applications", requireAuth, async (req, res) => {
 			"discounts.name as discountName",
 		);
 
-	res.json(applications.map((a) => ({ ...a, createdAt: toISO(a.createdAt), updatedAt: toISO(a.updatedAt) })));
+	res.json(
+		applications.map((a) => ({
+			...a,
+			createdAt: toISO(a.createdAt),
+			updatedAt: toISO(a.updatedAt),
+		})),
+	);
 });
 
 router.get("/applications/:id", requireAuth, async (req, res) => {
 	const application = await db("applications")
-		.where({ "applications.id": req.params.id, "applications.user_id": req.user.id })
+		.where({
+			"applications.id": req.params.id,
+			"applications.user_id": req.user.id,
+		})
 		.join("discounts", "applications.discount_id", "discounts.id")
 		.select(
 			"applications.id",
@@ -45,13 +54,20 @@ router.get("/applications/:id", requireAuth, async (req, res) => {
 	const documents = await db("application_documents")
 		.where({ application_id: application.id })
 		.join("documents", "application_documents.document_id", "documents.id")
-		.select("documents.id", "documents.filename", "documents.uploaded_at as uploadedAt");
+		.select(
+			"documents.id",
+			"documents.filename",
+			"documents.uploaded_at as uploadedAt",
+		);
 
 	res.json({
 		...application,
 		createdAt: toISO(application.createdAt),
 		updatedAt: toISO(application.updatedAt),
-		documents: documents.map((d) => ({ ...d, uploadedAt: toISO(d.uploadedAt) })),
+		documents: documents.map((d) => ({
+			...d,
+			uploadedAt: toISO(d.uploadedAt),
+		})),
 	});
 });
 
@@ -62,7 +78,9 @@ router.post("/applications", requireAuth, async (req, res) => {
 	if (!discount) return res.status(400).json({ message: "Discount not found" });
 
 	if (!documentIds || !documentIds.length) {
-		return res.status(400).json({ message: "At least one document is required" });
+		return res
+			.status(400)
+			.json({ message: "At least one document is required" });
 	}
 
 	const docs = await db("documents")
@@ -80,19 +98,32 @@ router.post("/applications", requireAuth, async (req, res) => {
 	});
 
 	await db("application_documents").insert(
-		documentIds.map(/** @param {string} documentId */ (documentId) => ({
-			application_id: id,
-			document_id: documentId,
-		})),
+		documentIds.map(
+			/** @param {string} documentId */ (documentId) => ({
+				application_id: id,
+				document_id: documentId,
+			}),
+		),
 	);
 
-	const application = await db("applications").where({ id }).first();
+	const application = await db("applications")
+		.where({ "applications.id": id })
+		.join("discounts", "applications.discount_id", "discounts.id")
+		.select(
+			"applications.id",
+			"applications.discount_id as discountId",
+			"discounts.name as discountName",
+			"applications.status",
+			"applications.review_note as reviewNote",
+			"applications.created_at as createdAt",
+			"applications.updated_at as updatedAt",
+		)
+		.first();
 
 	res.status(201).json({
-		id: application.id,
-		discountId: application.discount_id,
-		status: application.status,
-		createdAt: toISO(application.created_at),
+		...application,
+		createdAt: toISO(application.createdAt),
+		updatedAt: toISO(application.updatedAt),
 	});
 });
 

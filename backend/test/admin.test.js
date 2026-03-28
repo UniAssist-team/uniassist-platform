@@ -32,7 +32,7 @@ async function createApplicationForUser(user, token, discountId) {
 }
 
 describe("GET /admin/applications", () => {
-	it("returns all applications as staff", async () => {
+	it("returns all applications as admin", async () => {
 		const admin = await createUser({ email: "admin@example.com", role: "admin" });
 		const student = await createUser({ email: "student@example.com" });
 		const adminToken = await createSession(admin.id);
@@ -47,6 +47,22 @@ describe("GET /admin/applications", () => {
 		expect(res.status).toBe(200);
 		expect(res.body).toHaveLength(1);
 		expect(res.body[0]).toHaveProperty("userEmail");
+	});
+
+	it("returns all applications as staff", async () => {
+		const staff = await createUser({ email: "staff@example.com", role: "staff" });
+		const student = await createUser({ email: "student@example.com" });
+		const staffToken = await createSession(staff.id);
+		const studentToken = await createSession(student.id);
+
+		await createApplicationForUser(student, studentToken, discounts[0].id);
+
+		const res = await request(app)
+			.get("/admin/applications")
+			.set("Authorization", `Bearer ${staffToken}`);
+
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveLength(1);
 	});
 
 	it("returns 403 as student", async () => {
@@ -109,6 +125,24 @@ describe("PATCH /admin/applications/:id", () => {
 		expect(res.status).toBe(200);
 		expect(res.body.status).toBe("approved");
 		expect(res.body.reviewedBy).toBe(admin.id);
+	});
+
+	it("approves an application as staff", async () => {
+		const staff = await createUser({ email: "staff@example.com", role: "staff" });
+		const student = await createUser({ email: "student@example.com" });
+		const staffToken = await createSession(staff.id);
+		const studentToken = await createSession(student.id);
+
+		const application = await createApplicationForUser(student, studentToken, discounts[0].id);
+
+		const res = await request(app)
+			.patch(`/admin/applications/${application.id}`)
+			.set("Authorization", `Bearer ${staffToken}`)
+			.send({ status: "approved" });
+
+		expect(res.status).toBe(200);
+		expect(res.body.status).toBe("approved");
+		expect(res.body.reviewedBy).toBe(staff.id);
 	});
 
 	it("rejects with a review note", async () => {

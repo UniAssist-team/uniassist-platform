@@ -25,9 +25,14 @@ router.post("/session/register", async (req, res) => {
 	}
 
 	const id = randomUUID();
-	const password_hash = await hashPassword(password);
+	const passwordHash = await hashPassword(password);
 
-	await db("users").insert({ id, email, password_hash, role: "student" });
+	await db("users").insert({
+		id,
+		email,
+		password_hash: passwordHash,
+		role: "student",
+	});
 
 	const token = generateToken();
 	const expiresAt = new Date();

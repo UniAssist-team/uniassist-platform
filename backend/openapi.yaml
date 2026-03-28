@@ -318,7 +318,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ChangeRoleResponse"
+                $ref: "#/components/schemas/CreateUserResponse"
         "401":
           description: Not authenticated
         "403":
@@ -451,6 +451,7 @@ components:
           format: email
         password:
           type: string
+          minLength: 1
 
     LoginRequest:
       type: object
@@ -589,6 +590,21 @@ components:
           type: string
           format: email
         password:
+          type: string
+          minLength: 1
+        role:
+          type: string
+          enum: [student, staff]
+
+    CreateUserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          nullable: true
+        email:
           type: string
         role:
           type: string
