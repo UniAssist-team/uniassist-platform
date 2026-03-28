@@ -52,7 +52,10 @@ export function up(knex) {
 				.inTable("discounts")
 				.onDelete("CASCADE");
 			t.string("status").notNullable().defaultTo("pending");
-			t.uuid("reviewed_by").references("id").inTable("users").onDelete("SET NULL");
+			t.uuid("reviewed_by")
+				.references("id")
+				.inTable("users")
+				.onDelete("SET NULL");
 			t.string("review_note");
 			t.timestamp("created_at").defaultTo(knex.fn.now());
 			t.timestamp("updated_at").defaultTo(knex.fn.now());

@@ -20,6 +20,28 @@ paths:
         "401":
           description: Not authenticated
 
+  /session/register:
+    post:
+      summary: Register a new student account
+      tags: [Session]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          description: Missing email or password
+        "409":
+          description: Email already registered
+
   /session/login:
     post:
       summary: Log in
@@ -96,6 +118,10 @@ paths:
                 $ref: "#/components/schemas/Document"
         "400":
           description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Not authenticated
 
@@ -199,6 +225,10 @@ paths:
                 $ref: "#/components/schemas/ApplicationSummary"
         "400":
           description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Not authenticated
 
@@ -228,7 +258,7 @@ paths:
 
   /admin/applications:
     get:
-      summary: List all applications (admin)
+      summary: List all applications (staff)
       tags: [Admin]
       security:
         - BearerAuth: []
@@ -238,9 +268,35 @@ paths:
           schema:
             type: string
             enum: [pending, approved, rejected]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: perPage
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
       responses:
         "200":
           description: List of all applications
+          headers:
+            X-Total-Count:
+              schema:
+                type: integer
+            X-Page:
+              schema:
+                type: integer
+            X-Per-Page:
+              schema:
+                type: integer
+            X-Total-Pages:
+              schema:
+                type: integer
           content:
             application/json:
               schema:
@@ -252,9 +308,140 @@ paths:
         "403":
           description: Forbidden
 
+  /admin/users:
+    get:
+      summary: List all users (admin only)
+      tags: [Admin]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: perPage
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: List of all users
+          headers:
+            X-Total-Count:
+              schema:
+                type: integer
+            X-Page:
+              schema:
+                type: integer
+            X-Per-Page:
+              schema:
+                type: integer
+            X-Total-Pages:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+        "401":
+          description: Not authenticated
+        "403":
+          description: Forbidden
+    post:
+      summary: Create a staff account (admin only)
+      tags: [Admin]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateUserResponse"
+        "401":
+          description: Not authenticated
+        "403":
+          description: Forbidden
+        "409":
+          description: Email already registered
+
+  /admin/users/{id}:
+    patch:
+      summary: Change a user's role (admin only)
+      tags: [Admin]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeRoleRequest"
+      responses:
+        "200":
+          description: Role updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeRoleResponse"
+        "401":
+          description: Not authenticated
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: User not found
+    delete:
+      summary: Delete a user (admin only)
+      tags: [Admin]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: User deleted
+        "401":
+          description: Not authenticated
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: User not found
+
   /admin/applications/{id}:
     patch:
-      summary: Review an application (admin)
+      summary: Review an application (staff)
       tags: [Admin]
       security:
         - BearerAuth: []
@@ -279,6 +466,10 @@ paths:
                 $ref: "#/components/schemas/ReviewedApplication"
         "400":
           description: Invalid status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Not authenticated
         "403":
@@ -302,7 +493,18 @@ components:
           type: string
         role:
           type: string
-          enum: [student, admin, root]
+          enum: [student, staff, admin]
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
 
     LoginRequest:
       type: object
@@ -412,6 +614,81 @@ components:
           type: string
           enum: [approved, rejected]
         reviewNote:
+          type: string
+
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          nullable: true
+        email:
+          type: string
+        role:
+          type: string
+          enum: [student, staff, admin]
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateUserRequest:
+      type: object
+      required: [email, password, role]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+        role:
+          type: string
+          enum: [student, staff]
+
+    CreateUserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          nullable: true
+        email:
+          type: string
+        role:
+          type: string
+          enum: [student, staff]
+
+    ChangeRoleRequest:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+          enum: [student, staff]
+
+    ChangeRoleResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          nullable: true
+        email:
+          type: string
+        role:
+          type: string
+          enum: [student, staff]
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
           type: string
 
     ReviewedApplication:

@@ -1,20 +1,18 @@
 import { randomUUID } from "crypto";
 import path from "path";
 import { Router } from "express";
-// TODO: replace multer with S3-compatible storage (MinIO)
-import multer from "multer";
 import fs from "fs/promises";
 import db from "../db.js";
 import { requireAuth } from "../middleware.js";
+import { toISO } from "../format.js";
 
-const upload = multer({ dest: "uploads/" });
 const router = Router();
 
 router.get("/documents", requireAuth, async (req, res) => {
 	const docs = await db("documents")
 		.where({ user_id: req.user.id })
 		.select("id", "filename", "uploaded_at as uploadedAt");
-	res.json(docs);
+	res.json(docs.map((d) => ({ ...d, uploadedAt: toISO(d.uploadedAt) })));
 });
 
 router.get("/documents/:documentId/file", requireAuth, async (req, res) => {
@@ -27,33 +25,31 @@ router.get("/documents/:documentId/file", requireAuth, async (req, res) => {
 	res.download(path.resolve(doc.storage_path), doc.filename);
 });
 
-router.post(
-	"/documents/upload",
-	requireAuth,
-	upload.single("file"),
-	async (req, res) => {
-		if (!req.file) {
-			return res.status(400).json({ message: "No file provided" });
-		}
+router.post("/documents/upload", requireAuth, async (req, res) => {
+	const file = /** @type {Express.Multer.File | undefined} */ (
+		Array.isArray(req.files) ? req.files[0] : req.file
+	);
+	if (!file) {
+		return res.status(400).json({ message: "No file provided" });
+	}
 
-		const id = randomUUID();
-		await db("documents").insert({
-			id,
-			user_id: req.user.id,
-			filename: req.file.originalname,
-			storage_path: req.file.path,
-		});
+	const id = randomUUID();
+	await db("documents").insert({
+		id,
+		user_id: req.user.id,
+		filename: file.originalname,
+		storage_path: file.path,
+	});
 
-		const doc = await db("documents").where({ id }).first();
-        // TODO: AI processing
+	const doc = await db("documents").where({ id }).first();
+	// TODO: AI processing
 
-		res.status(201).json({
-			id: doc.id,
-			filename: doc.filename,
-			uploadedAt: doc.uploaded_at,
-		});
-	},
-);
+	res.status(201).json({
+		id: doc.id,
+		filename: doc.filename,
+		uploadedAt: toISO(doc.uploaded_at),
+	});
+});
 
 router.delete("/documents/:documentId", requireAuth, async (req, res) => {
 	const doc = await db("documents")

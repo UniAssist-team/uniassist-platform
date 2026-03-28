@@ -3,6 +3,7 @@ import db from "./db.js";
 /** @typedef {import('express').Request} Request */
 /** @typedef {import('express').Response} Response */
 /** @typedef {import('express').NextFunction} NextFunction */
+/** @typedef {"student" | "staff" | "admin"} Role */
 
 /**
  * @param {Request} req
@@ -22,14 +23,20 @@ export function requestLogger(req, res, next) {
 }
 
 /**
- * @param {Error} err
+ * @param {Error & { status?: number, errors?: unknown[] }} err
  * @param {Request} req
  * @param {Response} res
  * @param {NextFunction} _next
  */
 export function errorHandler(err, req, res, _next) {
-	console.error(`${req.method} ${req.url} - Unhandled error:\n`, err);
-	res.sendStatus(500);
+	const status = err.status || 500;
+	if (status >= 500) {
+		console.error(`${req.method} ${req.url} - Unhandled error:\n`, err);
+	}
+	res.status(status).json({
+		message: err.message,
+		errors: err.errors,
+	});
 }
 
 /**
@@ -46,7 +53,7 @@ export async function requireAuth(req, res, next) {
 	const token = header.slice(7);
 	const session = await db("sessions")
 		.where({ token })
-		.where("expires_at", ">", new Date())
+		.where("expires_at", ">", new Date().toISOString())
 		.first();
 
 	if (!session) {
@@ -63,9 +70,10 @@ export async function requireAuth(req, res, next) {
 }
 
 /**
- * @param {...string} roles
+ * @param {...Role} roles
  */
 export function requireRole(...roles) {
+	/** @param {Request} req @param {Response} res @param {NextFunction} next */
 	return (req, res, next) => {
 		if (!req.user || !roles.includes(req.user.role)) {
 			return res.sendStatus(403);
