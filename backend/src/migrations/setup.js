@@ -5,6 +5,7 @@ export function up(knex) {
 	return knex.schema
 		.createTable("users", (t) => {
 			t.uuid("id").primary();
+			t.string("name");
 			t.string("email").notNullable().unique();
 			t.string("password_hash").notNullable();
 			t.string("role").notNullable().defaultTo("student");

@@ -3,6 +3,7 @@ import db from "./db.js";
 /** @typedef {import('express').Request} Request */
 /** @typedef {import('express').Response} Response */
 /** @typedef {import('express').NextFunction} NextFunction */
+/** @typedef {"student" | "staff" | "admin"} Role */
 
 /**
  * @param {Request} req
@@ -69,7 +70,7 @@ export async function requireAuth(req, res, next) {
 }
 
 /**
- * @param {...string} roles
+ * @param {...Role} roles
  */
 export function requireRole(...roles) {
 	/** @param {Request} req @param {Response} res @param {NextFunction} next */

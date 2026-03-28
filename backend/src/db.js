@@ -9,6 +9,9 @@ const db = knex({
 	migrations: {
 		directory: "./src/migrations",
 	},
+	seeds: {
+		directory: "./src/seeds",
+	},
 	pool: {
 		/** @param {import("better-sqlite3").Database} conn @param {(err?: Error | null) => void} done */
 		afterCreate(conn, done) {
