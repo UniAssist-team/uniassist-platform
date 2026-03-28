@@ -10,7 +10,10 @@ const router = Router();
 /** @param {import('express').Request['query']} query */
 function parsePagination(query) {
 	const page = Math.max(1, parseInt(/** @type {string} */ (query.page)) || 1);
-	const perPage = Math.max(1, Math.min(100, parseInt(/** @type {string} */ (query.perPage)) || 20));
+	const perPage = Math.max(
+		1,
+		Math.min(100, parseInt(/** @type {string} */ (query.perPage)) || 20),
+	);
 	return { page, perPage, offset: (page - 1) * perPage };
 }
 
@@ -40,7 +43,9 @@ router.get(
 			baseQuery.where("applications.status", req.query.status);
 		}
 
-		const [{ count: totalCount }] = await baseQuery.clone().count("applications.id as count");
+		const [{ count: totalCount }] = await baseQuery
+			.clone()
+			.count("applications.id as count");
 
 		const applications = await baseQuery
 			.select(
@@ -57,7 +62,11 @@ router.get(
 			.limit(perPage)
 			.offset(offset);
 
-		setPaginationHeaders(res, { page, perPage, totalCount: Number(totalCount) });
+		setPaginationHeaders(res, {
+			page,
+			perPage,
+			totalCount: Number(totalCount),
+		});
 		res.json(
 			applications.map((a) => ({
 				...a,
@@ -150,7 +159,11 @@ router.get(
 			.limit(perPage)
 			.offset(offset);
 
-		setPaginationHeaders(res, { page, perPage, totalCount: Number(totalCount) });
+		setPaginationHeaders(res, {
+			page,
+			perPage,
+			totalCount: Number(totalCount),
+		});
 		res.json(users.map((u) => ({ ...u, createdAt: toISO(u.createdAt) })));
 	},
 );

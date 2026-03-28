@@ -18,8 +18,26 @@ const swaggerDocument = /** @type {import("swagger-ui-express").JsonObject} */ (
 	load(readFileSync(path.join(__dirname, "..", "openapi.yaml"), "utf8"))
 );
 
+const allowedOrigins = (process.env.ALLOW_ORIGINS || "http://localhost:3000")
+	.split(",")
+	.map((o) => o.trim());
+
 const app = express();
 
+app.use((req, res, next) => {
+	const origin = req.headers.origin;
+	if (origin && allowedOrigins.includes(origin)) {
+		res.set("Access-Control-Allow-Origin", origin);
+		res.set("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
+		res.set("Access-Control-Allow-Headers", "Content-Type,Authorization");
+		res.set(
+			"Access-Control-Expose-Headers",
+			"X-Total-Count,X-Page,X-Per-Page,X-Total-Pages",
+		);
+	}
+	if (req.method === "OPTIONS") return res.sendStatus(204);
+	next();
+});
 app.use(requestLogger);
 app.use("/docs", serve, setup(swaggerDocument));
 app.use(express.json());
