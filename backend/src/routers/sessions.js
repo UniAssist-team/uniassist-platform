@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { Router } from "express";
 import db from "../db.js";
 import { requireAuth } from "../middleware.js";
-import { verifyPassword, generateToken } from "../crypto.js";
+import { hashPassword, verifyPassword, generateToken } from "../crypto.js";
 
 const router = Router();
 
@@ -10,6 +10,40 @@ const TOKEN_TTL_DAYS = 7;
 
 router.get("/session", requireAuth, (req, res) => {
 	res.json(req.user);
+});
+
+router.post("/session/register", async (req, res) => {
+	const { email, password } = req.body;
+
+	if (!email || !password) {
+		return res.sendStatus(400);
+	}
+
+	const existing = await db("users").where({ email }).first();
+	if (existing) {
+		return res.sendStatus(409);
+	}
+
+	const id = randomUUID();
+	const password_hash = await hashPassword(password);
+
+	await db("users").insert({ id, email, password_hash, role: "student" });
+
+	const token = generateToken();
+	const expiresAt = new Date();
+	expiresAt.setDate(expiresAt.getDate() + TOKEN_TTL_DAYS);
+
+	await db("sessions").insert({
+		id: randomUUID(),
+		user_id: id,
+		token,
+		expires_at: expiresAt.toISOString(),
+	});
+
+	res.status(201).json({
+		token,
+		user: { id, email, role: "student" },
+	});
 });
 
 router.post("/session/login", async (req, res) => {
@@ -38,7 +72,7 @@ router.post("/session/login", async (req, res) => {
 });
 
 router.post("/session/logout", requireAuth, async (req, res) => {
-	const token = req.headers.authorization.slice(7);
+	const token = /** @type {string} */ (req.headers.authorization).slice(7);
 	await db("sessions").where({ token }).del();
 	res.sendStatus(204);
 });
