@@ -7,14 +7,42 @@ import { toISO } from "../format.js";
 
 const router = Router();
 
+/** @param {import('express').Request['query']} query */
+function parsePagination(query) {
+	const page = Math.max(1, parseInt(/** @type {string} */ (query.page)) || 1);
+	const perPage = Math.max(1, Math.min(100, parseInt(/** @type {string} */ (query.perPage)) || 20));
+	return { page, perPage, offset: (page - 1) * perPage };
+}
+
+/**
+ * @param {import('express').Response} res
+ * @param {{ page: number, perPage: number, totalCount: number }} opts
+ */
+function setPaginationHeaders(res, { page, perPage, totalCount }) {
+	res.set("X-Total-Count", String(totalCount));
+	res.set("X-Page", String(page));
+	res.set("X-Per-Page", String(perPage));
+	res.set("X-Total-Pages", String(Math.ceil(totalCount / perPage)));
+}
+
 router.get(
 	"/admin/applications",
 	requireAuth,
 	requireRole("staff", "admin"),
 	async (req, res) => {
-		const query = db("applications")
+		const { page, perPage, offset } = parsePagination(req.query);
+
+		const baseQuery = db("applications")
 			.join("discounts", "applications.discount_id", "discounts.id")
-			.join("users", "applications.user_id", "users.id")
+			.join("users", "applications.user_id", "users.id");
+
+		if (req.query.status) {
+			baseQuery.where("applications.status", req.query.status);
+		}
+
+		const [{ count: totalCount }] = await baseQuery.clone().count("applications.id as count");
+
+		const applications = await baseQuery
 			.select(
 				"applications.id",
 				"applications.status",
@@ -25,13 +53,11 @@ router.get(
 				"discounts.name as discountName",
 				"users.id as userId",
 				"users.email as userEmail",
-			);
+			)
+			.limit(perPage)
+			.offset(offset);
 
-		if (req.query.status) {
-			query.where("applications.status", req.query.status);
-		}
-
-		const applications = await query;
+		setPaginationHeaders(res, { page, perPage, totalCount: Number(totalCount) });
 		res.json(
 			applications.map((a) => ({
 				...a,
@@ -115,13 +141,16 @@ router.get(
 	requireAuth,
 	requireRole("admin"),
 	async (req, res) => {
-		const users = await db("users").select(
-			"id",
-			"name",
-			"email",
-			"role",
-			"created_at as createdAt",
-		);
+		const { page, perPage, offset } = parsePagination(req.query);
+
+		const [{ count: totalCount }] = await db("users").count("id as count");
+
+		const users = await db("users")
+			.select("id", "name", "email", "role", "created_at as createdAt")
+			.limit(perPage)
+			.offset(offset);
+
+		setPaginationHeaders(res, { page, perPage, totalCount: Number(totalCount) });
 		res.json(users.map((u) => ({ ...u, createdAt: toISO(u.createdAt) })));
 	},
 );

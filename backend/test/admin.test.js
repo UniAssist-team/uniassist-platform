@@ -106,6 +106,92 @@ describe("GET /admin/applications", () => {
 		expect(res2.status).toBe(200);
 		expect(res2.body).toHaveLength(1);
 	});
+
+	it("returns pagination headers with defaults", async () => {
+		const admin = await createUser({ email: "admin@example.com", role: "admin" });
+		const student = await createUser({ email: "student@example.com" });
+		const adminToken = await createSession(admin.id);
+		const studentToken = await createSession(student.id);
+
+		await createApplicationForUser(student, studentToken, discounts[0].id);
+		await createApplicationForUser(student, studentToken, discounts[1].id);
+
+		const res = await request(app)
+			.get("/admin/applications")
+			.set("Authorization", `Bearer ${adminToken}`);
+
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveLength(2);
+		expect(res.headers["x-total-count"]).toBe("2");
+		expect(res.headers["x-page"]).toBe("1");
+		expect(res.headers["x-per-page"]).toBe("20");
+		expect(res.headers["x-total-pages"]).toBe("1");
+	});
+
+	it("paginates results", async () => {
+		const admin = await createUser({ email: "admin@example.com", role: "admin" });
+		const student = await createUser({ email: "student@example.com" });
+		const adminToken = await createSession(admin.id);
+		const studentToken = await createSession(student.id);
+
+		await createApplicationForUser(student, studentToken, discounts[0].id);
+		await createApplicationForUser(student, studentToken, discounts[1].id);
+
+		const page1 = await request(app)
+			.get("/admin/applications?page=1&perPage=1")
+			.set("Authorization", `Bearer ${adminToken}`);
+
+		expect(page1.status).toBe(200);
+		expect(page1.body).toHaveLength(1);
+		expect(page1.headers["x-total-count"]).toBe("2");
+		expect(page1.headers["x-total-pages"]).toBe("2");
+
+		const page2 = await request(app)
+			.get("/admin/applications?page=2&perPage=1")
+			.set("Authorization", `Bearer ${adminToken}`);
+
+		expect(page2.status).toBe(200);
+		expect(page2.body).toHaveLength(1);
+		expect(page2.body[0].id).not.toBe(page1.body[0].id);
+	});
+
+	it("returns empty array for page beyond total", async () => {
+		const admin = await createUser({ email: "admin@example.com", role: "admin" });
+		const adminToken = await createSession(admin.id);
+
+		const res = await request(app)
+			.get("/admin/applications?page=99")
+			.set("Authorization", `Bearer ${adminToken}`);
+
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveLength(0);
+		expect(res.headers["x-total-count"]).toBe("0");
+		expect(res.headers["x-total-pages"]).toBe("0");
+	});
+
+	it("pagination works with status filter", async () => {
+		const admin = await createUser({ email: "admin@example.com", role: "admin" });
+		const student = await createUser({ email: "student@example.com" });
+		const adminToken = await createSession(admin.id);
+		const studentToken = await createSession(student.id);
+
+		const app1 = await createApplicationForUser(student, studentToken, discounts[0].id);
+		await createApplicationForUser(student, studentToken, discounts[1].id);
+
+		await request(app)
+			.patch(`/admin/applications/${app1.id}`)
+			.set("Authorization", `Bearer ${adminToken}`)
+			.send({ status: "approved" });
+
+		const res = await request(app)
+			.get("/admin/applications?status=approved&page=1&perPage=10")
+			.set("Authorization", `Bearer ${adminToken}`);
+
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveLength(1);
+		expect(res.headers["x-total-count"]).toBe("1");
+		expect(res.headers["x-total-pages"]).toBe("1");
+	});
 });
 
 describe("PATCH /admin/applications/:id", () => {
@@ -339,6 +425,61 @@ describe("GET /admin/users", () => {
 		const res = await request(app).get("/admin/users");
 
 		expect(res.status).toBe(401);
+	});
+
+	it("returns pagination headers with defaults", async () => {
+		const admin = await createUser({ email: "admin@example.com", role: "admin" });
+		await createUser({ email: "s1@example.com" });
+		await createUser({ email: "s2@example.com" });
+		const token = await createSession(admin.id);
+
+		const res = await request(app)
+			.get("/admin/users")
+			.set("Authorization", `Bearer ${token}`);
+
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveLength(3);
+		expect(res.headers["x-total-count"]).toBe("3");
+		expect(res.headers["x-page"]).toBe("1");
+		expect(res.headers["x-per-page"]).toBe("20");
+		expect(res.headers["x-total-pages"]).toBe("1");
+	});
+
+	it("paginates results", async () => {
+		const admin = await createUser({ email: "admin@example.com", role: "admin" });
+		await createUser({ email: "s1@example.com" });
+		await createUser({ email: "s2@example.com" });
+		const token = await createSession(admin.id);
+
+		const page1 = await request(app)
+			.get("/admin/users?page=1&perPage=2")
+			.set("Authorization", `Bearer ${token}`);
+
+		expect(page1.status).toBe(200);
+		expect(page1.body).toHaveLength(2);
+		expect(page1.headers["x-total-count"]).toBe("3");
+		expect(page1.headers["x-total-pages"]).toBe("2");
+
+		const page2 = await request(app)
+			.get("/admin/users?page=2&perPage=2")
+			.set("Authorization", `Bearer ${token}`);
+
+		expect(page2.status).toBe(200);
+		expect(page2.body).toHaveLength(1);
+	});
+
+	it("returns empty array for page beyond total", async () => {
+		const admin = await createUser({ email: "admin@example.com", role: "admin" });
+		const token = await createSession(admin.id);
+
+		const res = await request(app)
+			.get("/admin/users?page=99")
+			.set("Authorization", `Bearer ${token}`);
+
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveLength(0);
+		expect(res.headers["x-total-count"]).toBe("1");
+		expect(res.headers["x-total-pages"]).toBe("1");
 	});
 });
 
