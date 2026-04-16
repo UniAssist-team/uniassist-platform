@@ -14,18 +14,37 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // Calls the login endpoint from your OpenAPI spec
       const data = await apiRequest('/session/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
-
-      // Save the JWT token returned by the backend
-      localStorage.setItem('token', data.token);
+      
+      // DEBUG: See what the API actually returns
+      console.log('🔍 API Response:', data);
+      console.log('🔍 Token from response:', data.token);
+      console.log('🔍 Full response keys:', Object.keys(data));
+      
+      // Try different possible token field names
+      const token = data.token || data.accessToken || data.access_token || data.jwt;
+      
+      if (!token) {
+        console.error('❌ No token found in response!');
+        setError('Authentication failed: No token received');
+        return;
+      }
+      
+      // Save the JWT token
+      localStorage.setItem('token', token);
+      console.log('✅ Token saved to localStorage');
+      
+      // Verify it was saved
+      const savedToken = localStorage.getItem('token');
+      console.log('✅ Verified token in localStorage:', savedToken ? 'Yes' : 'No');
       
       // Redirect to the dashboard
       router.push('/dashboard');
     } catch (err: any) {
+      console.error('❌ Login error:', err);
       setError(err.message || 'Invalid email or password');
     }
   };
