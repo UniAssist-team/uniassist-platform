@@ -39,12 +39,12 @@ export default function LoginPage() {
       
       // Verify it was saved
       const savedToken = localStorage.getItem('token');
-      console.log('✅ Verified token in localStorage:', savedToken ? 'Yes' : 'No');
+      console.log('Verified token in localStorage:', savedToken ? 'Yes' : 'No');
       
       // Redirect to the dashboard
       router.push('/dashboard');
     } catch (err: any) {
-      console.error('❌ Login error:', err);
+      console.error('Login error:', err);
       setError(err.message || 'Invalid email or password');
     }
   };
