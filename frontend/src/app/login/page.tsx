@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { apiRequest } from '@/lib/api'; 
 import { useRouter } from 'next/navigation';
 
@@ -20,31 +20,36 @@ export default function LoginPage() {
       });
       
       // DEBUG: See what the API actually returns
-      console.log('🔍 API Response:', data);
-      console.log('🔍 Token from response:', data.token);
-      console.log('🔍 Full response keys:', Object.keys(data));
+      console.log('API Response:', data);
+      console.log('Token from response:', data.token);
+      console.log('Full response keys:', Object.keys(data));
       
       // Try different possible token field names
       const token = data.token || data.accessToken || data.access_token || data.jwt;
       
       if (!token) {
-        console.error('❌ No token found in response!');
+        console.error('No token found in response!');
         setError('Authentication failed: No token received');
         return;
       }
       
       // Save the JWT token
       localStorage.setItem('token', token);
-      console.log('✅ Token saved to localStorage');
+      console.log('Token saved to localStorage');
       
       // Verify it was saved
       const savedToken = localStorage.getItem('token');
-      console.log('✅ Verified token in localStorage:', savedToken ? 'Yes' : 'No');
+      console.log('Verified token in localStorage:', savedToken ? 'Yes' : 'No');
       
       // Redirect to the dashboard
       router.push('/dashboard');
+      useEffect(() => {
+        if (localStorage.getItem('token')) {
+          router.replace('/dashboard');
+        }
+}, [router]);
     } catch (err: any) {
-      console.error('❌ Login error:', err);
+      console.error('Login error:', err);
       setError(err.message || 'Invalid email or password');
     }
   };
@@ -88,4 +93,5 @@ export default function LoginPage() {
       </form>
     </div>
   );
+  
 }

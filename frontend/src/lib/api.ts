@@ -14,7 +14,8 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
     headers,
   });
 
-  if (response.status === 401) {
+  // Skip 401 handling for login endpoint
+  if (response.status === 401 && !endpoint.includes('/login')) {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       window.location.href = '/login';
@@ -50,8 +51,17 @@ export async function apiUpload(endpoint: string, file: File) {
   return response.json();
 }
 
+// ADD THIS LOGOUT FUNCTION
 export function logout() {
-  apiRequest('/session/logout', { method: 'POST' }).catch(() => {});
+  // Try to call logout endpoint (optional, ignore if fails)
+  fetch(`${BASE_URL}/session/logout`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token')}`,
+    },
+  }).catch(() => {});
+  
+  // Clear token and redirect
   localStorage.removeItem('token');
   window.location.href = '/login';
 }
