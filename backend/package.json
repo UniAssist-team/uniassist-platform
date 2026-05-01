@@ -21,10 +21,13 @@
     "js-yaml": "^4.1.1",
     "knex": "^3.1.0",
     "multer": "^2.1.1",
-    "swagger-ui-express": "^5.0.1"
+    "pdf-parse": "^2.4.5",
+    "swagger-ui-express": "^5.0.1",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.7",
+    "@total-typescript/ts-reset": "^0.6.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^5.0.6",
     "@types/js-yaml": "^4.0.9",

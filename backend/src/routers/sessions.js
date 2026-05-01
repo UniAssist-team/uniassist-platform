@@ -45,7 +45,7 @@ router.post("/session/register", async (req, res) => {
 		expires_at: expiresAt.toISOString(),
 	});
 
-	res.status(201).json({
+	return res.status(201).json({
 		token,
 		user: { id, email, role: "student" },
 	});
@@ -70,7 +70,7 @@ router.post("/session/login", async (req, res) => {
 		expires_at: expiresAt.toISOString(),
 	});
 
-	res.json({
+	return res.json({
 		token,
 		user: { id: user.id, email: user.email, role: user.role },
 	});

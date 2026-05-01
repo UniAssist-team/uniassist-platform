@@ -35,7 +35,10 @@ app.use((req, res, next) => {
 			"X-Total-Count,X-Page,X-Per-Page,X-Total-Pages",
 		);
 	}
-	if (req.method === "OPTIONS") return res.sendStatus(204);
+	if (req.method === "OPTIONS") {
+		res.sendStatus(204);
+		return;
+	}
 	next();
 });
 app.use(requestLogger);

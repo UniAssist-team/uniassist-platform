@@ -23,6 +23,7 @@ export async function hashPassword(password) {
  */
 export async function verifyPassword(password, stored) {
 	const [salt, hash] = stored.split(":");
+	if (!salt || !hash) return false;
 	const hashBuffer = Buffer.from(hash, "hex");
 	const derivedKey = await scryptAsync(password, salt, KEY_LENGTH);
 	return timingSafeEqual(hashBuffer, derivedKey);

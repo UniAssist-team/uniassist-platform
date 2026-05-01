@@ -1,9 +1,23 @@
-import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from "vitest";
 import request from "supertest";
 import path from "path";
 import fs from "fs/promises";
-import app from "../src/app.js";
-import { setupDb, teardownDb, destroyDb, createUser, createSession, createDocument, db } from "./setup.js";
+
+vi.mock("../src/core/file-processor.js", () => ({
+	ensurePdf: vi.fn(async () => {}),
+	extractTextFromPdf: vi.fn(async () => ""),
+	inferDiscounts: vi.fn(async () => []),
+}));
+
+vi.mock("../src/core/ocr.js", () => ({
+	extractTextFromPdfImages: vi.fn(async () => ""),
+	OCR_FALLBACK_TEXT_LIMIT: 200,
+}));
+
+const fileProcessor = await import("../src/core/file-processor.js");
+const ocr = await import("../src/core/ocr.js");
+const app = (await import("../src/app.js")).default;
+const { setupDb, teardownDb, destroyDb, createUser, createSession, createDocument, db } = await import("./setup.js");
 
 beforeAll(async () => {
 	await setupDb();
@@ -16,6 +30,10 @@ beforeEach(async () => {
 	await db("sessions").del();
 	await db("documents").del();
 	await db("users").del();
+	vi.mocked(fileProcessor.ensurePdf).mockReset().mockResolvedValue(undefined);
+	vi.mocked(fileProcessor.extractTextFromPdf).mockReset().mockResolvedValue("");
+	vi.mocked(fileProcessor.inferDiscounts).mockReset().mockResolvedValue([]);
+	vi.mocked(ocr.extractTextFromPdfImages).mockReset().mockResolvedValue("");
 });
 
 afterAll(async () => {
@@ -26,6 +44,9 @@ describe("POST /documents/upload", () => {
 	it("uploads a file", async () => {
 		const user = await createUser();
 		const token = await createSession(user.id);
+		vi.mocked(fileProcessor.inferDiscounts).mockResolvedValue([
+			{ discountId: "d1", confidence: 0.9, reason: "GPA 9.4" },
+		]);
 
 		const res = await request(app)
 			.post("/documents/upload")
@@ -36,6 +57,58 @@ describe("POST /documents/upload", () => {
 		expect(res.body.id).toBeDefined();
 		expect(res.body.filename).toBe("test.pdf");
 		expect(res.body.uploadedAt).toBeDefined();
+		expect(res.body.matches).toEqual([
+			{ discountId: "d1", confidence: 0.9, reason: "GPA 9.4" },
+		]);
+	});
+
+	it("runs OCR fallback when text-layer is sparse", async () => {
+		const user = await createUser();
+		const token = await createSession(user.id);
+		vi.mocked(fileProcessor.extractTextFromPdf).mockResolvedValue("short");
+		vi.mocked(ocr.extractTextFromPdfImages).mockResolvedValue("OCR EXTRACTED TEXT");
+
+		const res = await request(app)
+			.post("/documents/upload")
+			.set("Authorization", `Bearer ${token}`)
+			.attach("file", Buffer.from("test content"), "scan.pdf");
+
+		expect(res.status).toBe(201);
+		expect(ocr.extractTextFromPdfImages).toHaveBeenCalledOnce();
+		const passedText = vi.mocked(fileProcessor.inferDiscounts).mock.calls[0]?.[0];
+		expect(passedText).toContain("short");
+		expect(passedText).toContain("OCR EXTRACTED TEXT");
+	});
+
+	it("skips OCR fallback when text-layer is plentiful", async () => {
+		const user = await createUser();
+		const token = await createSession(user.id);
+		const longText = "a".repeat(500);
+		vi.mocked(fileProcessor.extractTextFromPdf).mockResolvedValue(longText);
+
+		const res = await request(app)
+			.post("/documents/upload")
+			.set("Authorization", `Bearer ${token}`)
+			.attach("file", Buffer.from("test content"), "text.pdf");
+
+		expect(res.status).toBe(201);
+		expect(ocr.extractTextFromPdfImages).not.toHaveBeenCalled();
+	});
+
+	it("rejects non-PDF files with 400", async () => {
+		const user = await createUser();
+		const token = await createSession(user.id);
+		vi.mocked(fileProcessor.ensurePdf).mockRejectedValue(new Error("File is not a PDF"));
+
+		const res = await request(app)
+			.post("/documents/upload")
+			.set("Authorization", `Bearer ${token}`)
+			.attach("file", Buffer.from("not a pdf"), "fake.pdf");
+
+		expect(res.status).toBe(400);
+		expect(res.body.message).toBe("File is not a PDF");
+		const docs = await db("documents").select("*");
+		expect(docs).toHaveLength(0);
 	});
 
 	it("returns 415 without multipart content type", async () => {

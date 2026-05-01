@@ -43,9 +43,10 @@ router.get(
 			baseQuery.where("applications.status", req.query.status);
 		}
 
-		const [{ count: totalCount }] = await baseQuery
-			.clone()
-			.count("applications.id as count");
+		const counts = /** @type {Array<{ count: number | string }>} */ (
+			await baseQuery.clone().count("applications.id as count")
+		);
+		const totalCount = counts[0]?.count ?? 0;
 
 		const applications = await baseQuery
 			.select(
@@ -90,13 +91,14 @@ router.patch(
 				.json({ message: "Status must be 'approved' or 'rejected'" });
 		}
 
+		const applicationId = String(req.params.id);
 		const application = await db("applications")
-			.where({ id: req.params.id })
+			.where({ id: applicationId })
 			.first();
 		if (!application) return res.sendStatus(404);
 
 		await db("applications")
-			.where({ id: req.params.id })
+			.where({ id: applicationId })
 			.update({
 				status,
 				review_note: reviewNote || null,
@@ -105,10 +107,11 @@ router.patch(
 			});
 
 		const updated = await db("applications")
-			.where({ id: req.params.id })
+			.where({ id: applicationId })
 			.first();
+		if (!updated) return res.sendStatus(500);
 
-		res.json({
+		return res.json({
 			id: updated.id,
 			status: updated.status,
 			reviewNote: updated.review_note,
@@ -141,7 +144,7 @@ router.post(
 			role,
 		});
 
-		res.status(201).json({ id, name: name || null, email, role });
+		return res.status(201).json({ id, name: name || null, email, role });
 	},
 );
 
@@ -152,7 +155,10 @@ router.get(
 	async (req, res) => {
 		const { page, perPage, offset } = parsePagination(req.query);
 
-		const [{ count: totalCount }] = await db("users").count("id as count");
+		const counts = /** @type {Array<{ count: number | string }>} */ (
+			await db("users").count("id as count")
+		);
+		const totalCount = counts[0]?.count ?? 0;
 
 		const users = await db("users")
 			.select("id", "name", "email", "role", "created_at as createdAt")
@@ -164,7 +170,9 @@ router.get(
 			perPage,
 			totalCount: Number(totalCount),
 		});
-		res.json(users.map((u) => ({ ...u, createdAt: toISO(u.createdAt) })));
+		return res.json(
+			users.map((u) => ({ ...u, createdAt: toISO(u.createdAt) })),
+		);
 	},
 );
 
@@ -174,8 +182,9 @@ router.patch(
 	requireRole("admin"),
 	async (req, res) => {
 		const { role } = req.body;
+		const userId = String(req.params.id);
 
-		const user = await db("users").where({ id: req.params.id }).first();
+		const user = await db("users").where({ id: userId }).first();
 		if (!user) return res.sendStatus(404);
 
 		if (user.role === "admin") {
@@ -184,9 +193,14 @@ router.patch(
 				.json({ message: "Cannot change the admin user's role" });
 		}
 
-		await db("users").where({ id: req.params.id }).update({ role });
+		await db("users").where({ id: userId }).update({ role });
 
-		res.json({ id: user.id, name: user.name || null, email: user.email, role });
+		return res.json({
+			id: user.id,
+			name: user.name || null,
+			email: user.email,
+			role,
+		});
 	},
 );
 
@@ -195,16 +209,17 @@ router.delete(
 	requireAuth,
 	requireRole("admin"),
 	async (req, res) => {
-		const user = await db("users").where({ id: req.params.id }).first();
+		const userId = String(req.params.id);
+		const user = await db("users").where({ id: userId }).first();
 		if (!user) return res.sendStatus(404);
 
 		if (user.role === "admin") {
 			return res.status(403).json({ message: "Cannot delete the admin user" });
 		}
 
-		await db("users").where({ id: req.params.id }).del();
+		await db("users").where({ id: userId }).del();
 
-		res.sendStatus(204);
+		return res.sendStatus(204);
 	},
 );
 

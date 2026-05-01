@@ -31,10 +31,8 @@ router.get("/applications", requireAuth, async (req, res) => {
 
 router.get("/applications/:id", requireAuth, async (req, res) => {
 	const application = await db("applications")
-		.where({
-			"applications.id": req.params.id,
-			"applications.user_id": req.user.id,
-		})
+		.where("applications.id", String(req.params.id))
+		.andWhere("applications.user_id", req.user.id)
 		.join("discounts", "applications.discount_id", "discounts.id")
 		.select(
 			"applications.id",
@@ -60,7 +58,7 @@ router.get("/applications/:id", requireAuth, async (req, res) => {
 			"documents.uploaded_at as uploadedAt",
 		);
 
-	res.json({
+	return res.json({
 		...application,
 		createdAt: toISO(application.createdAt),
 		updatedAt: toISO(application.updatedAt),
@@ -107,7 +105,7 @@ router.post("/applications", requireAuth, async (req, res) => {
 	);
 
 	const application = await db("applications")
-		.where({ "applications.id": id })
+		.where("applications.id", id)
 		.join("discounts", "applications.discount_id", "discounts.id")
 		.select(
 			"applications.id",
@@ -119,8 +117,9 @@ router.post("/applications", requireAuth, async (req, res) => {
 			"applications.updated_at as updatedAt",
 		)
 		.first();
+	if (!application) return res.sendStatus(500);
 
-	res.status(201).json({
+	return res.status(201).json({
 		...application,
 		createdAt: toISO(application.createdAt),
 		updatedAt: toISO(application.updatedAt),

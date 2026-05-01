@@ -47,7 +47,8 @@ export function errorHandler(err, req, res, _next) {
 export async function requireAuth(req, res, next) {
 	const header = req.headers.authorization;
 	if (!header || !header.startsWith("Bearer ")) {
-		return res.sendStatus(401);
+		res.sendStatus(401);
+		return;
 	}
 
 	const token = header.slice(7);
@@ -57,12 +58,14 @@ export async function requireAuth(req, res, next) {
 		.first();
 
 	if (!session) {
-		return res.sendStatus(401);
+		res.sendStatus(401);
+		return;
 	}
 
 	const user = await db("users").where({ id: session.user_id }).first();
 	if (!user) {
-		return res.sendStatus(401);
+		res.sendStatus(401);
+		return;
 	}
 
 	req.user = { id: user.id, email: user.email, role: user.role };
@@ -76,7 +79,8 @@ export function requireRole(...roles) {
 	/** @param {Request} req @param {Response} res @param {NextFunction} next */
 	return (req, res, next) => {
 		if (!req.user || !roles.includes(req.user.role)) {
-			return res.sendStatus(403);
+			res.sendStatus(403);
+			return;
 		}
 		next();
 	};
