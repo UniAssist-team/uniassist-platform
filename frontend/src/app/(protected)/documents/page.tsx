@@ -1,18 +1,22 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { apiRequest, apiUpload } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
 
 export default function DocumentsPage() {
+  const router = useRouter();
   const [documents, setDocuments] = useState<any[]>([]);
+  const [discounts, setDiscounts] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const [matches, setMatches] = useState<{ discountId: string; confidence: number; reason: string }[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = () =>
-    Promise.all([apiRequest('/session'), apiRequest('/documents')])
-      .then(([u, docs]) => { setUser(u); setDocuments(docs); });
+    Promise.all([apiRequest('/session'), apiRequest('/documents'), apiRequest('/discounts')])
+      .then(([u, docs, ds]) => { setUser(u); setDocuments(docs); setDiscounts(ds); });
 
   useEffect(() => { load(); }, []);
 
@@ -22,14 +26,21 @@ export default function DocumentsPage() {
     setUploading(true);
     setError('');
     try {
-      await apiUpload('/documents/upload', file);
+      const result = await apiUpload('/documents/upload', file);
       if (fileRef.current) fileRef.current.value = '';
       await load();
+      if (Array.isArray(result?.matches) && result.matches.length > 0) {
+        setMatches(result.matches);
+      }
     } catch (e: any) {
       setError(e.message);
     } finally {
       setUploading(false);
     }
+  };
+
+  const applyToDiscount = (discountId: string, discountName: string) => {
+    router.push(`/applications/new?discountId=${discountId}&discountName=${encodeURIComponent(discountName)}`);
   };
 
   const handleDelete = async (id: string) => {
@@ -100,6 +111,44 @@ export default function DocumentsPage() {
             )}
           </main>
         </div>
+
+        {matches && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg">
+              <h2 className="font-semibold text-zinc-800 mb-1">Suggested discounts</h2>
+              <p className="text-sm text-zinc-500 mb-4">
+                Based on the document you just uploaded. Click one to start an application.
+              </p>
+              <div className="space-y-2 mb-4">
+                {matches.map(m => {
+                  const d = discounts.find(x => x.id === m.discountId);
+                  if (!d) return null;
+                  return (
+                    <button
+                      key={m.discountId}
+                      onClick={() => applyToDiscount(d.id, d.name)}
+                      className="w-full text-left border border-zinc-200 rounded-lg p-3 hover:bg-zinc-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-zinc-800 text-sm">{d.name}</span>
+                        <span className="text-xs text-zinc-400">
+                          {Math.round(m.confidence * 100)}% match
+                        </span>
+                      </div>
+                      {m.reason && <p className="text-xs text-zinc-500">{m.reason}</p>}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                onClick={() => setMatches(null)}
+                className="text-sm px-4 py-2 rounded-lg border border-zinc-300 text-zinc-600 hover:bg-zinc-50"
+              >
+                Skip for now
+              </button>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
