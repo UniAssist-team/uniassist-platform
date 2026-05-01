@@ -2,11 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '@/lib/api';
-import Sidebar from '@/components/Sidebar';
-import { useUser } from '@/contexts/UserContext';
 
 export default function ApplicationsPage() {
-  const { user } = useUser();
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -23,9 +20,7 @@ export default function ApplicationsPage() {
     'bg-yellow-100 text-yellow-700';
 
   return (
-    <div className="flex min-h-screen bg-zinc-50">
-        <Sidebar role={user?.role || 'student'} />
-        <div className="flex-1 flex flex-col">
+    <>
           <header className="h-16 bg-white border-b px-8 flex items-center justify-between">
             <h1 className="font-semibold text-zinc-800 text-lg">My Applications</h1>
             <button
@@ -81,7 +76,6 @@ export default function ApplicationsPage() {
               </div>
             )}
           </main>
-        </div>
-    </div>
+    </>
   );
 }

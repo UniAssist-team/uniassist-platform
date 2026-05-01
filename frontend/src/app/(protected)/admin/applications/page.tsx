@@ -1,11 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { apiRequest } from '@/lib/api';
-import Sidebar from '@/components/Sidebar';
-import { useUser } from '@/contexts/UserContext';
 
 export default function AdminApplicationsPage() {
-  const { user } = useUser();
   const [applications, setApplications] = useState<any[]>([]);
   const [filter, setFilter] = useState('pending');
   const [loading, setLoading] = useState(true);
@@ -43,9 +40,7 @@ export default function AdminApplicationsPage() {
     'bg-yellow-100 text-yellow-700';
 
   return (
-    <div className="flex min-h-screen bg-zinc-50">
-        <Sidebar role={user?.role || 'staff'} />
-        <div className="flex-1 flex flex-col">
+    <>
           <header className="h-16 bg-white border-b px-8 flex items-center justify-between">
             <h1 className="font-semibold text-zinc-800 text-lg">Application Queue</h1>
             <div className="flex gap-2">
@@ -150,7 +145,6 @@ export default function AdminApplicationsPage() {
               </div>
             )}
           </main>
-        </div>
-    </div>
+    </>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { apiRequest } from '@/lib/api';
-import Sidebar from '@/components/Sidebar';
 import { useUser } from '@/contexts/UserContext';
 
 export default function DashboardPage() {
@@ -20,9 +19,7 @@ export default function DashboardPage() {
   const rejected = applications.filter(a => a.status === 'rejected').length;
 
   return (
-    <div className="flex min-h-screen bg-zinc-50">
-        <Sidebar role={user?.role || 'student'} />
-        <div className="flex-1 flex flex-col">
+    <>
           <header className="h-16 bg-white border-b px-8 flex items-center justify-between">
             <h1 className="font-semibold text-zinc-800 text-lg">Dashboard</h1>
             {user && (
@@ -85,7 +82,6 @@ export default function DashboardPage() {
               </>
             )}
           </main>
-        </div>
-    </div>
+    </>
   );
 }

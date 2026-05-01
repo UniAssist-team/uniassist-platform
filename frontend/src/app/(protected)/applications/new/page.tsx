@@ -2,8 +2,6 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiRequest } from '@/lib/api';
-import Sidebar from '@/components/Sidebar';
-import { useUser } from '@/contexts/UserContext';
 
 function NewApplicationForm() {
   const router = useRouter();
@@ -11,7 +9,6 @@ function NewApplicationForm() {
   const discountId = params.get('discountId') || '';
   const discountName = params.get('discountName') || '';
 
-  const { user } = useUser();
   const [documents, setDocuments] = useState<any[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -43,9 +40,7 @@ function NewApplicationForm() {
   };
 
   return (
-    <div className="flex min-h-screen bg-zinc-50">
-        <Sidebar role={user?.role || 'student'} />
-        <div className="flex-1 flex flex-col">
+    <>
           <header className="h-16 bg-white border-b px-8 flex items-center">
             <h1 className="font-semibold text-zinc-800 text-lg">New Application</h1>
           </header>
@@ -109,8 +104,7 @@ function NewApplicationForm() {
               </div>
             </div>
           </main>
-        </div>
-    </div>
+    </>
   );
 }
 

@@ -2,11 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '@/lib/api';
-import Sidebar from '@/components/Sidebar';
-import { useUser } from '@/contexts/UserContext';
 
 export default function DiscountsPage() {
-  const { user } = useUser();
   const [discounts, setDiscounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -18,9 +15,7 @@ export default function DiscountsPage() {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-zinc-50">
-        <Sidebar role={user?.role || 'student'} />
-        <div className="flex-1 flex flex-col">
+    <>
           <header className="h-16 bg-white border-b px-8 flex items-center">
             <h1 className="font-semibold text-zinc-800 text-lg">Available Discounts</h1>
           </header>
@@ -52,7 +47,6 @@ export default function DiscountsPage() {
               </div>
             )}
           </main>
-        </div>
-    </div>
+    </>
   );
 }

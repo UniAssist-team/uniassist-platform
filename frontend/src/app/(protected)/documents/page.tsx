@@ -2,12 +2,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest, apiUpload } from '@/lib/api';
-import Sidebar from '@/components/Sidebar';
-import { useUser } from '@/contexts/UserContext';
 
 export default function DocumentsPage() {
   const router = useRouter();
-  const { user } = useUser();
   const [documents, setDocuments] = useState<any[]>([]);
   const [discounts, setDiscounts] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -51,9 +48,7 @@ export default function DocumentsPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-zinc-50">
-        <Sidebar role={user?.role || 'student'} />
-        <div className="flex-1 flex flex-col">
+    <>
           <header className="h-16 bg-white border-b px-8 flex items-center">
             <h1 className="font-semibold text-zinc-800 text-lg">My Documents</h1>
           </header>
@@ -111,7 +106,6 @@ export default function DocumentsPage() {
               </div>
             )}
           </main>
-        </div>
 
         {matches && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -150,6 +144,6 @@ export default function DocumentsPage() {
             </div>
           </div>
         )}
-    </div>
+    </>
   );
 }

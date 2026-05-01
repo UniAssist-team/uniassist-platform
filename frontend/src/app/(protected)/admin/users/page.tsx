@@ -1,11 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { apiRequest } from '@/lib/api';
-import Sidebar from '@/components/Sidebar';
-import { useUser } from '@/contexts/UserContext';
 
 export default function AdminUsersPage() {
-  const { user } = useUser();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -51,9 +48,7 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-zinc-50">
-        <Sidebar role={user?.role || 'admin'} />
-        <div className="flex-1 flex flex-col">
+    <>
           <header className="h-16 bg-white border-b px-8 flex items-center justify-between">
             <h1 className="font-semibold text-zinc-800 text-lg">User Management</h1>
             <button
@@ -158,7 +153,6 @@ export default function AdminUsersPage() {
               </div>
             )}
           </main>
-        </div>
-    </div>
+    </>
   );
 }
