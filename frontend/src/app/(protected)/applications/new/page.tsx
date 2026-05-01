@@ -3,6 +3,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiRequest } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
+import { useUser } from '@/contexts/UserContext';
 
 function NewApplicationForm() {
   const router = useRouter();
@@ -10,15 +11,14 @@ function NewApplicationForm() {
   const discountId = params.get('discountId') || '';
   const discountName = params.get('discountName') || '';
 
+  const { user } = useUser();
   const [documents, setDocuments] = useState<any[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
-  const [user, setUser] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    Promise.all([apiRequest('/session'), apiRequest('/documents')])
-      .then(([u, docs]) => { setUser(u); setDocuments(docs); });
+    apiRequest('/documents').then(setDocuments);
   }, []);
 
   const toggle = (id: string) =>

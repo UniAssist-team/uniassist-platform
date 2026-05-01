@@ -2,20 +2,17 @@
 import { useEffect, useState } from 'react';
 import { apiRequest } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
+import { useUser } from '@/contexts/UserContext';
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<any>(null);
+  const { user } = useUser();
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      apiRequest('/session'),
-      apiRequest('/applications'),
-    ]).then(([u, apps]) => {
-      setUser(u);
-      setApplications(apps);
-    }).finally(() => setLoading(false));
+    apiRequest('/applications')
+      .then(setApplications)
+      .finally(() => setLoading(false));
   }, []);
 
   const pending = applications.filter(a => a.status === 'pending').length;

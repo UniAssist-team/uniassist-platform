@@ -2,10 +2,11 @@
 import { useEffect, useState } from 'react';
 import { apiRequest } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
+import { useUser } from '@/contexts/UserContext';
 
 export default function AdminUsersPage() {
+  const { user } = useUser();
   const [users, setUsers] = useState<any[]>([]);
-  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'staff' });
@@ -13,8 +14,8 @@ export default function AdminUsersPage() {
 
   const load = () => {
     setLoading(true);
-    Promise.all([apiRequest('/session'), apiRequest('/admin/users?perPage=100')])
-      .then(([u, us]) => { setUser(u); setUsers(us); })
+    apiRequest('/admin/users?perPage=100')
+      .then(setUsers)
       .finally(() => setLoading(false));
   };
 

@@ -3,20 +3,21 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest, apiUpload } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
+import { useUser } from '@/contexts/UserContext';
 
 export default function DocumentsPage() {
   const router = useRouter();
+  const { user } = useUser();
   const [documents, setDocuments] = useState<any[]>([]);
   const [discounts, setDiscounts] = useState<any[]>([]);
-  const [user, setUser] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [matches, setMatches] = useState<{ discountId: string; confidence: number; reason: string }[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = () =>
-    Promise.all([apiRequest('/session'), apiRequest('/documents'), apiRequest('/discounts')])
-      .then(([u, docs, ds]) => { setUser(u); setDocuments(docs); setDiscounts(ds); });
+    Promise.all([apiRequest('/documents'), apiRequest('/discounts')])
+      .then(([docs, ds]) => { setDocuments(docs); setDiscounts(ds); });
 
   useEffect(() => { load(); }, []);
 

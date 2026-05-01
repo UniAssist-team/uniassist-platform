@@ -2,10 +2,11 @@
 import { useEffect, useState } from 'react';
 import { apiRequest } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
+import { useUser } from '@/contexts/UserContext';
 
 export default function AdminApplicationsPage() {
+  const { user } = useUser();
   const [applications, setApplications] = useState<any[]>([]);
-  const [user, setUser] = useState<any>(null);
   const [filter, setFilter] = useState('pending');
   const [loading, setLoading] = useState(true);
   const [reviewId, setReviewId] = useState('');
@@ -14,10 +15,8 @@ export default function AdminApplicationsPage() {
 
   const load = (status: string) => {
     setLoading(true);
-    Promise.all([
-      apiRequest('/session'),
-      apiRequest(`/admin/applications?status=${status}&perPage=50`),
-    ]).then(([u, apps]) => { setUser(u); setApplications(apps); })
+    apiRequest(`/admin/applications?status=${status}&perPage=50`)
+      .then(setApplications)
       .finally(() => setLoading(false));
   };
 

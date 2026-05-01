@@ -3,16 +3,17 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
+import { useUser } from '@/contexts/UserContext';
 
 export default function ApplicationsPage() {
+  const { user } = useUser();
   const [applications, setApplications] = useState<any[]>([]);
-  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    Promise.all([apiRequest('/session'), apiRequest('/applications')])
-      .then(([u, apps]) => { setUser(u); setApplications(apps); })
+    apiRequest('/applications')
+      .then(setApplications)
       .finally(() => setLoading(false));
   }, []);
 

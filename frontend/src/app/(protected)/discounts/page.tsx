@@ -3,16 +3,17 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
+import { useUser } from '@/contexts/UserContext';
 
 export default function DiscountsPage() {
+  const { user } = useUser();
   const [discounts, setDiscounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
   const router = useRouter();
 
   useEffect(() => {
-    Promise.all([apiRequest('/session'), apiRequest('/discounts')])
-      .then(([u, d]) => { setUser(u); setDiscounts(d); })
+    apiRequest('/discounts')
+      .then(setDiscounts)
       .finally(() => setLoading(false));
   }, []);
 
