@@ -8,9 +8,12 @@ function NewApplicationForm() {
   const params = useSearchParams();
   const discountId = params.get('discountId') || '';
   const discountName = params.get('discountName') || '';
+  const initialDocumentId = params.get('documentId') || '';
 
   const [documents, setDocuments] = useState<any[]>([]);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(
+    initialDocumentId ? [initialDocumentId] : [],
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 

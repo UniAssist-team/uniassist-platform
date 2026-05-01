@@ -81,6 +81,7 @@ async function chatJson(messages) {
 		throw new Error("OLLAMA_API_KEY is not set");
 	}
 
+	console.log(`[Ollama:${model}] request:`, messages);
 	const res = await fetch(`${baseUrl}/api/chat`, {
 		method: "POST",
 		headers: {
@@ -113,5 +114,7 @@ async function chatJson(messages) {
 	if (typeof content !== "string") {
 		throw new Error("Ollama chat returned no content");
 	}
-	return JSON.parse(content);
+	const parsed = JSON.parse(content);
+	console.log(`[Ollama:${model}] response:`, parsed);
+	return parsed;
 }

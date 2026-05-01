@@ -10,7 +10,10 @@ export default function DocumentsPage() {
   const [discounts, setDiscounts] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
-  const [matches, setMatches] = useState<{ discountId: string; confidence: number; reason: string }[] | null>(null);
+  const [matches, setMatches] = useState<{
+    documentId: string;
+    matches: { discountId: string; confidence: number; reason: string }[];
+  } | null>(null);
   const [viewingDoc, setViewingDoc] = useState<PdfDoc | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -30,7 +33,7 @@ export default function DocumentsPage() {
       if (fileRef.current) fileRef.current.value = '';
       await load();
       if (Array.isArray(result?.matches) && result.matches.length > 0) {
-        setMatches(result.matches);
+        setMatches({ documentId: result.id, matches: result.matches });
       }
     } catch (e: any) {
       setError(e.message);
@@ -39,8 +42,10 @@ export default function DocumentsPage() {
     }
   };
 
-  const applyToDiscount = (discountId: string, discountName: string) => {
-    router.push(`/applications/new?discountId=${discountId}&discountName=${encodeURIComponent(discountName)}`);
+  const applyToDiscount = (discountId: string, discountName: string, documentId: string) => {
+    router.push(
+      `/applications/new?discountId=${discountId}&discountName=${encodeURIComponent(discountName)}&documentId=${documentId}`,
+    );
   };
 
   const handleDelete = async (id: string) => {
@@ -115,7 +120,7 @@ export default function DocumentsPage() {
                           <div className="flex gap-3 justify-end items-center">
                             {doc.matches?.length > 0 && (
                               <button
-                                onClick={() => setMatches(doc.matches)}
+                                onClick={() => setMatches({ documentId: doc.id, matches: doc.matches })}
                                 className="text-xs font-medium bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"
                               >
                                 Suggested discounts
@@ -168,13 +173,13 @@ export default function DocumentsPage() {
                 Based on the document you just uploaded. Click one to start an application.
               </p>
               <div className="space-y-2 mb-4">
-                {matches.map(m => {
+                {matches.matches.map(m => {
                   const d = discounts.find(x => x.id === m.discountId);
                   if (!d) return null;
                   return (
                     <button
                       key={m.discountId}
-                      onClick={() => applyToDiscount(d.id, d.name)}
+                      onClick={() => applyToDiscount(d.id, d.name, matches.documentId)}
                       className="w-full text-left border border-zinc-200 rounded-lg p-3 hover:bg-zinc-50 transition-colors"
                     >
                       <div className="flex items-center justify-between mb-1">

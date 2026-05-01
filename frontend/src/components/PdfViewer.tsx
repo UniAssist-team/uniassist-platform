@@ -15,7 +15,13 @@ function getPdfjsLib(): Promise<any> {
   return pdfjsLibPromise;
 }
 
-export type PdfDoc = { filename: string; fileUrl: string };
+export type PdfDocMatch = { discountName: string; confidence: number; reason: string };
+
+export type PdfDoc = {
+  filename: string;
+  fileUrl: string;
+  matches?: PdfDocMatch[];
+};
 
 export default function PdfViewer({
   documents,
@@ -54,6 +60,29 @@ export default function PdfViewer({
           heading.textContent = doc.filename;
           heading.className = 'font-medium text-zinc-700 text-sm mt-4 mb-2';
           containerRef.current.appendChild(heading);
+
+          if (doc.matches && doc.matches.length > 0) {
+            const panel = document.createElement('div');
+            panel.className = 'mb-3 p-3 bg-green-50 border border-green-200 rounded-lg text-xs space-y-1';
+            const panelHeading = document.createElement('p');
+            panelHeading.className = 'font-medium text-green-700 mb-1';
+            panelHeading.textContent = 'Suggested discounts';
+            panel.appendChild(panelHeading);
+            for (const m of doc.matches) {
+              const line = document.createElement('div');
+              line.className = 'text-zinc-700';
+              const nameEl = document.createElement('span');
+              nameEl.className = 'font-medium';
+              nameEl.textContent = m.discountName;
+              const detailEl = document.createElement('span');
+              detailEl.className = 'text-zinc-500';
+              detailEl.textContent = ` (${Math.round(m.confidence * 100)}%) — ${m.reason}`;
+              line.appendChild(nameEl);
+              line.appendChild(detailEl);
+              panel.appendChild(line);
+            }
+            containerRef.current.appendChild(panel);
+          }
 
           for (let n = 1; n <= pdf.numPages; n++) {
             if (cancelled) return;

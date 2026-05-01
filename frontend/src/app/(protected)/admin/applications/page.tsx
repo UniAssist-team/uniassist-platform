@@ -5,6 +5,7 @@ import PdfViewer, { type PdfDoc } from '@/components/PdfViewer';
 
 export default function AdminApplicationsPage() {
   const [applications, setApplications] = useState<any[]>([]);
+  const [discounts, setDiscounts] = useState<any[]>([]);
   const [filter, setFilter] = useState('pending');
   const [loading, setLoading] = useState(true);
   const [reviewId, setReviewId] = useState('');
@@ -13,14 +14,23 @@ export default function AdminApplicationsPage() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewingDocs, setViewingDocs] = useState<PdfDoc[] | null>(null);
 
+  useEffect(() => {
+    apiRequest('/discounts').then(setDiscounts);
+  }, []);
+
   const openViewer = async (appId: string) => {
     setViewerOpen(true);
     setViewingDocs(null);
     const docs = await apiRequest(`/admin/applications/${appId}/documents`);
     setViewingDocs(
-      docs.map((d: { id: string; filename: string }) => ({
+      docs.map((d: { id: string; filename: string; matches?: { discountId: string; confidence: number; reason: string }[] }) => ({
         filename: d.filename,
         fileUrl: `/api/admin/documents/${d.id}/file`,
+        matches: (d.matches ?? []).map((m) => ({
+          discountName: discounts.find(x => x.id === m.discountId)?.name ?? m.discountId,
+          confidence: m.confidence,
+          reason: m.reason,
+        })),
       })),
     );
   };
