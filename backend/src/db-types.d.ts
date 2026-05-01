@@ -49,6 +49,7 @@ export interface DocumentRow {
 	filename: string;
 	storage_path: string;
 	uploaded_at: string;
+	matches: string;
 }
 
 export interface DocumentInsert {
@@ -57,6 +58,7 @@ export interface DocumentInsert {
 	filename: string;
 	storage_path: string;
 	uploaded_at?: string;
+	matches?: string;
 }
 
 export interface DiscountRow {

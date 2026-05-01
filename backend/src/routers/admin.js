@@ -138,9 +138,16 @@ router.get(
 				"documents.id",
 				"documents.filename",
 				"documents.uploaded_at as uploadedAt",
+				"documents.matches",
 			);
 
-		return res.json(docs.map((d) => ({ ...d, uploadedAt: toISO(d.uploadedAt) })));
+		return res.json(
+			docs.map((d) => ({
+				...d,
+				uploadedAt: toISO(d.uploadedAt),
+				matches: JSON.parse(d.matches),
+			})),
+		);
 	},
 );
 

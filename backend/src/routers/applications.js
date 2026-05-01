@@ -56,6 +56,7 @@ router.get("/applications/:id", requireAuth, async (req, res) => {
 			"documents.id",
 			"documents.filename",
 			"documents.uploaded_at as uploadedAt",
+			"documents.matches",
 		);
 
 	return res.json({
@@ -65,6 +66,7 @@ router.get("/applications/:id", requireAuth, async (req, res) => {
 		documents: documents.map((d) => ({
 			...d,
 			uploadedAt: toISO(d.uploadedAt),
+			matches: JSON.parse(d.matches),
 		})),
 	});
 });

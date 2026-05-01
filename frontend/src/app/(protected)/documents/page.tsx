@@ -112,7 +112,15 @@ export default function DocumentsPage() {
                           {new Date(doc.uploadedAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-3 text-right">
-                          <div className="flex gap-3 justify-end">
+                          <div className="flex gap-3 justify-end items-center">
+                            {doc.matches?.length > 0 && (
+                              <button
+                                onClick={() => setMatches(doc.matches)}
+                                className="text-xs font-medium bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"
+                              >
+                                Suggested discounts
+                              </button>
+                            )}
                             <button
                               onClick={() => setViewingDoc({
                                 filename: doc.filename,

@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import path from "path";
 import { Router } from "express";
 import fs from "fs/promises";
@@ -20,8 +20,14 @@ const router = Router();
 router.get("/documents", requireAuth, async (req, res) => {
 	const docs = await db("documents")
 		.where({ user_id: req.user.id })
-		.select("id", "filename", "uploaded_at as uploadedAt");
-	res.json(docs.map((d) => ({ ...d, uploadedAt: toISO(d.uploadedAt) })));
+		.select("id", "filename", "uploaded_at as uploadedAt", "matches");
+	res.json(
+		docs.map((d) => ({
+			...d,
+			uploadedAt: toISO(d.uploadedAt),
+			matches: JSON.parse(d.matches),
+		})),
+	);
 });
 
 router.get("/documents/:documentId/file", requireAuth, async (req, res) => {
@@ -49,20 +55,25 @@ router.post("/documents/upload", requireAuth, async (req, res) => {
 		return res.status(400).json({ message: "File is not a PDF" });
 	}
 
-	const id = randomUUID();
-	await db("documents").insert({
-		id,
-		user_id: req.user.id,
-		filename: file.originalname,
-		storage_path: file.path,
-	});
+	const buffer = await fs.readFile(file.path);
+	const checksum = createHash("sha256").update(buffer).digest("hex");
+	const storagePath = path.join("uploads", `${req.user.id}-${checksum}`);
 
-	const doc = await db("documents").where({ id }).first();
-	if (!doc) return res.sendStatus(500);
+	const existing = await db("documents")
+		.where({ user_id: req.user.id, storage_path: storagePath })
+		.first();
+	if (existing) {
+		await fs.unlink(file.path).catch(() => {});
+		return res.status(409).json({
+			message: "You have already uploaded this file",
+		});
+	}
 
-	let text = await extractTextFromPdf(file.path);
+	await fs.rename(file.path, storagePath);
+
+	let text = await extractTextFromPdf(storagePath);
 	if (text.trim().length < OCR_FALLBACK_TEXT_LIMIT) {
-		const ocrText = await extractTextFromPdfImages(file.path);
+		const ocrText = await extractTextFromPdfImages(storagePath);
 		text = ocrText ? `${text}\n\n${ocrText}` : text;
 	}
 	const discounts = await db("discounts").select(
@@ -72,6 +83,18 @@ router.post("/documents/upload", requireAuth, async (req, res) => {
 		"required_documents as requiredDocuments",
 	);
 	const matches = await inferDiscounts(text, discounts);
+
+	const id = randomUUID();
+	await db("documents").insert({
+		id,
+		user_id: req.user.id,
+		filename: file.originalname,
+		storage_path: storagePath,
+		matches: JSON.stringify(matches),
+	});
+
+	const doc = await db("documents").where({ id }).first();
+	if (!doc) return res.sendStatus(500);
 
 	return res.status(201).json({
 		id: doc.id,

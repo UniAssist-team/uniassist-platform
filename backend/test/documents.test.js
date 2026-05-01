@@ -24,6 +24,13 @@ beforeAll(async () => {
 	await fs.mkdir("uploads", { recursive: true });
 });
 
+afterEach(async () => {
+	const docs = await db("documents").select("storage_path");
+	await Promise.all(
+		docs.map((d) => fs.unlink(d.storage_path).catch(() => {})),
+	);
+});
+
 beforeEach(async () => {
 	await db("application_documents").del();
 	await db("applications").del();
@@ -95,6 +102,48 @@ describe("POST /documents/upload", () => {
 		expect(ocr.extractTextFromPdfImages).not.toHaveBeenCalled();
 	});
 
+	it("rejects re-upload of the same file by the same user with 409", async () => {
+		const user = await createUser();
+		const token = await createSession(user.id);
+		const content = Buffer.from("identical content");
+
+		const first = await request(app)
+			.post("/documents/upload")
+			.set("Authorization", `Bearer ${token}`)
+			.attach("file", content, "first.pdf");
+		expect(first.status).toBe(201);
+
+		const second = await request(app)
+			.post("/documents/upload")
+			.set("Authorization", `Bearer ${token}`)
+			.attach("file", content, "second.pdf");
+		expect(second.status).toBe(409);
+		expect(second.body.message).toBe("You have already uploaded this file");
+
+		const docs = await db("documents").where({ user_id: user.id });
+		expect(docs).toHaveLength(1);
+	});
+
+	it("allows two different users to upload the same file content", async () => {
+		const userA = await createUser({ email: "a@example.com" });
+		const userB = await createUser({ email: "b@example.com" });
+		const tokenA = await createSession(userA.id);
+		const tokenB = await createSession(userB.id);
+		const content = Buffer.from("shared content");
+
+		const a = await request(app)
+			.post("/documents/upload")
+			.set("Authorization", `Bearer ${tokenA}`)
+			.attach("file", content, "a.pdf");
+		expect(a.status).toBe(201);
+
+		const b = await request(app)
+			.post("/documents/upload")
+			.set("Authorization", `Bearer ${tokenB}`)
+			.attach("file", content, "b.pdf");
+		expect(b.status).toBe(201);
+	});
+
 	it("rejects non-PDF files with 400", async () => {
 		const user = await createUser();
 		const token = await createSession(user.id);
@@ -128,6 +177,30 @@ describe("POST /documents/upload", () => {
 			.attach("file", Buffer.from("test"), "test.pdf");
 
 		expect(res.status).toBe(401);
+	});
+});
+
+describe("matches persistence", () => {
+	it("persists matches on upload and returns them in the list", async () => {
+		const user = await createUser();
+		const token = await createSession(user.id);
+		vi.mocked(fileProcessor.inferDiscounts).mockResolvedValue([
+			{ discountId: "d-academic", confidence: 0.8, reason: "GPA" },
+		]);
+
+		await request(app)
+			.post("/documents/upload")
+			.set("Authorization", `Bearer ${token}`)
+			.attach("file", Buffer.from("persistence content"), "doc.pdf");
+
+		const list = await request(app)
+			.get("/documents")
+			.set("Authorization", `Bearer ${token}`);
+		expect(list.status).toBe(200);
+		expect(list.body).toHaveLength(1);
+		expect(list.body[0].matches).toEqual([
+			{ discountId: "d-academic", confidence: 0.8, reason: "GPA" },
+		]);
 	});
 });
 

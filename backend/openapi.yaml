@@ -115,7 +115,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DocumentUploadResponse"
+                $ref: "#/components/schemas/Document"
         "400":
           description: Invalid request
           content:
@@ -124,6 +124,12 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Not authenticated
+        "409":
+          description: A file with the same content already exists for this user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /documents/{documentId}/file:
     get:
@@ -589,6 +595,7 @@ components:
 
     Document:
       type: object
+      required: [id, filename, uploadedAt, matches]
       properties:
         id:
           type: string
@@ -597,6 +604,10 @@ components:
         uploadedAt:
           type: string
           format: date-time
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiscountMatch"
 
     DiscountMatch:
       type: object
@@ -610,17 +621,6 @@ components:
           maximum: 1
         reason:
           type: string
-
-    DocumentUploadResponse:
-      allOf:
-        - $ref: "#/components/schemas/Document"
-        - type: object
-          required: [matches]
-          properties:
-            matches:
-              type: array
-              items:
-                $ref: "#/components/schemas/DiscountMatch"
 
     Discount:
       type: object
