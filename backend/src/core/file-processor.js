@@ -1,6 +1,5 @@
 import fs from "fs/promises";
 import { PDFParse } from "pdf-parse";
-import { inferDiscountsNaive } from "./naive-infer.js";
 import { inferDiscountsOllama } from "./ollama.js";
 
 const PDF_MAGIC = "%PDF-";
@@ -59,12 +58,12 @@ export async function extractTextFromPdf(filePath) {
  */
 export async function inferDiscounts(fileText, possibleDiscounts) {
 	if (!process.env.OLLAMA_API_KEY) {
-		return inferDiscountsNaive(fileText, possibleDiscounts);
+		return [];
 	}
 	try {
 		return await inferDiscountsOllama(fileText, possibleDiscounts);
 	} catch (err) {
 		console.error("Ollama inference failed, using naive fallback:", err);
-		return inferDiscountsNaive(fileText, possibleDiscounts);
+		return [];
 	}
 }
