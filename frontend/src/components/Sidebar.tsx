@@ -13,12 +13,14 @@ const studentNav = [
 const adminNav = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/admin/applications', label: 'Application Queue' },
-  { href: '/admin/users', label: 'User Management' },
+  { href: '/admin/users', label: 'User Management', adminOnly: true },
 ];
 
 export default function Sidebar({ role }: { role: string }) {
   const pathname = usePathname();
-  const nav = role === 'admin' || role === 'staff' ? adminNav : studentNav;
+  const isStaffOrAdmin = role === 'admin' || role === 'staff';
+  const nav = (isStaffOrAdmin ? adminNav : studentNav)
+    .filter(item => !('adminOnly' in item && item.adminOnly) || role === 'admin');
 
   return (
     <aside className="w-64 bg-zinc-900 text-white flex flex-col min-h-screen">

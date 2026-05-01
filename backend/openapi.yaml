@@ -115,7 +115,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Document"
+                $ref: "#/components/schemas/DocumentUploadResponse"
         "400":
           description: Invalid request
           content:
@@ -477,6 +477,69 @@ paths:
         "404":
           description: Application not found
 
+  /admin/applications/{id}/documents:
+    get:
+      summary: List documents attached to an application (staff)
+      tags: [Admin]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Documents attached to the application
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    filename:
+                      type: string
+                    uploadedAt:
+                      type: string
+                      format: date-time
+        "401":
+          description: Not authenticated
+        "403":
+          description: Forbidden
+        "404":
+          description: Application not found
+
+  /admin/documents/{documentId}/file:
+    get:
+      summary: Download any document file (staff)
+      tags: [Admin]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The document file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Not authenticated
+        "403":
+          description: Forbidden
+        "404":
+          description: Document not found
+
 components:
   securitySchemes:
     BearerAuth:
@@ -534,6 +597,30 @@ components:
         uploadedAt:
           type: string
           format: date-time
+
+    DiscountMatch:
+      type: object
+      required: [discountId, confidence, reason]
+      properties:
+        discountId:
+          type: string
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        reason:
+          type: string
+
+    DocumentUploadResponse:
+      allOf:
+        - $ref: "#/components/schemas/Document"
+        - type: object
+          required: [matches]
+          properties:
+            matches:
+              type: array
+              items:
+                $ref: "#/components/schemas/DiscountMatch"
 
     Discount:
       type: object

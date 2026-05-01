@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import path from "path";
 import { Router } from "express";
 import db from "../db.js";
 import { hashPassword } from "../crypto.js";
@@ -118,6 +119,41 @@ router.patch(
 			reviewedBy: updated.reviewed_by,
 			updatedAt: toISO(updated.updated_at),
 		});
+	},
+);
+
+router.get(
+	"/admin/applications/:id/documents",
+	requireAuth,
+	requireRole("staff", "admin"),
+	async (req, res) => {
+		const applicationId = String(req.params.id);
+		const application = await db("applications").where({ id: applicationId }).first();
+		if (!application) return res.sendStatus(404);
+
+		const docs = await db("application_documents")
+			.where({ application_id: applicationId })
+			.join("documents", "application_documents.document_id", "documents.id")
+			.select(
+				"documents.id",
+				"documents.filename",
+				"documents.uploaded_at as uploadedAt",
+			);
+
+		return res.json(docs.map((d) => ({ ...d, uploadedAt: toISO(d.uploadedAt) })));
+	},
+);
+
+router.get(
+	"/admin/documents/:documentId/file",
+	requireAuth,
+	requireRole("staff", "admin"),
+	async (req, res) => {
+		const doc = await db("documents")
+			.where({ id: String(req.params.documentId) })
+			.first();
+		if (!doc) return res.sendStatus(404);
+		return res.download(path.resolve(doc.storage_path), doc.filename);
 	},
 );
 

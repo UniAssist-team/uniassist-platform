@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { apiRequest } from '@/lib/api';
+import PdfViewer, { type PdfDoc } from '@/components/PdfViewer';
 
 export default function AdminApplicationsPage() {
   const [applications, setApplications] = useState<any[]>([]);
@@ -9,6 +10,25 @@ export default function AdminApplicationsPage() {
   const [reviewId, setReviewId] = useState('');
   const [reviewNote, setReviewNote] = useState('');
   const [reviewStatus, setReviewStatus] = useState<'approved' | 'rejected'>('approved');
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewingDocs, setViewingDocs] = useState<PdfDoc[] | null>(null);
+
+  const openViewer = async (appId: string) => {
+    setViewerOpen(true);
+    setViewingDocs(null);
+    const docs = await apiRequest(`/admin/applications/${appId}/documents`);
+    setViewingDocs(
+      docs.map((d: { id: string; filename: string }) => ({
+        filename: d.filename,
+        fileUrl: `/api/admin/documents/${d.id}/file`,
+      })),
+    );
+  };
+
+  const closeViewer = () => {
+    setViewerOpen(false);
+    setViewingDocs(null);
+  };
 
   const load = (status: string) => {
     setLoading(true);
@@ -87,6 +107,12 @@ export default function AdminApplicationsPage() {
                             {new Date(app.createdAt).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-3 flex gap-2">
+                            <button
+                              onClick={() => openViewer(app.id)}
+                              className="text-xs bg-zinc-100 text-zinc-700 px-2 py-1 rounded hover:bg-zinc-200"
+                            >
+                              View
+                            </button>
                             {app.status === 'pending' && (
                               <>
                                 <button
@@ -145,6 +171,14 @@ export default function AdminApplicationsPage() {
               </div>
             )}
           </main>
+
+          {viewerOpen && (
+            <PdfViewer
+              documents={viewingDocs}
+              title="Application documents"
+              onClose={closeViewer}
+            />
+          )}
     </>
   );
 }

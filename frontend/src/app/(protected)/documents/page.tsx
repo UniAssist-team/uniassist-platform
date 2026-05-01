@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest, apiUpload } from '@/lib/api';
+import PdfViewer, { type PdfDoc } from '@/components/PdfViewer';
 
 export default function DocumentsPage() {
   const router = useRouter();
@@ -10,6 +11,7 @@ export default function DocumentsPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [matches, setMatches] = useState<{ discountId: string; confidence: number; reason: string }[] | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<PdfDoc | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = () =>
@@ -45,6 +47,24 @@ export default function DocumentsPage() {
     if (!confirm('Delete this document?')) return;
     await apiRequest(`/documents/${id}`, { method: 'DELETE' });
     await load();
+  };
+
+  const handleDownload = async (id: string, filename: string) => {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`/api/documents/${id}/file`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      setError(`Failed to download (${res.status})`);
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -92,12 +112,29 @@ export default function DocumentsPage() {
                           {new Date(doc.uploadedAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-3 text-right">
-                          <button
-                            onClick={() => handleDelete(doc.id)}
-                            className="text-red-500 hover:text-red-700 text-xs font-medium"
-                          >
-                            Delete
-                          </button>
+                          <div className="flex gap-3 justify-end">
+                            <button
+                              onClick={() => setViewingDoc({
+                                filename: doc.filename,
+                                fileUrl: `/api/documents/${doc.id}/file`,
+                              })}
+                              className="text-zinc-600 hover:text-zinc-800 text-xs font-medium"
+                            >
+                              View
+                            </button>
+                            <button
+                              onClick={() => handleDownload(doc.id, doc.filename)}
+                              className="text-blue-600 hover:text-blue-700 text-xs font-medium"
+                            >
+                              Download
+                            </button>
+                            <button
+                              onClick={() => handleDelete(doc.id)}
+                              className="text-red-500 hover:text-red-700 text-xs font-medium"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -106,6 +143,14 @@ export default function DocumentsPage() {
               </div>
             )}
           </main>
+
+        {viewingDoc && (
+          <PdfViewer
+            documents={[viewingDoc]}
+            title={viewingDoc.filename}
+            onClose={() => setViewingDoc(null)}
+          />
+        )}
 
         {matches && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
