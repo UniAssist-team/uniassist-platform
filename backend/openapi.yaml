@@ -483,6 +483,32 @@ paths:
         "404":
           description: Application not found
 
+  /admin/stats:
+    get:
+      summary: Application count stats by status (staff)
+      tags: [Admin]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Counts of applications grouped by status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pending, approved, rejected]
+                properties:
+                  pending:
+                    type: integer
+                  approved:
+                    type: integer
+                  rejected:
+                    type: integer
+        "401":
+          description: Not authenticated
+        "403":
+          description: Forbidden
+
   /admin/applications/{id}/documents:
     get:
       summary: List documents attached to an application (staff)

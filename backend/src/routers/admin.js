@@ -123,12 +123,40 @@ router.patch(
 );
 
 router.get(
+	"/admin/stats",
+	requireAuth,
+	requireRole("staff", "admin"),
+	async (_req, res) => {
+		const rows =
+			/** @type {Array<{ status: string; count: number | string }>} */ (
+				await db("applications")
+					.select("status")
+					.count("id as count")
+					.groupBy("status")
+			);
+		const stats = { pending: 0, approved: 0, rejected: 0 };
+		for (const r of rows) {
+			if (
+				r.status === "pending" ||
+				r.status === "approved" ||
+				r.status === "rejected"
+			) {
+				stats[r.status] = Number(r.count);
+			}
+		}
+		return res.json(stats);
+	},
+);
+
+router.get(
 	"/admin/applications/:id/documents",
 	requireAuth,
 	requireRole("staff", "admin"),
 	async (req, res) => {
 		const applicationId = String(req.params.id);
-		const application = await db("applications").where({ id: applicationId }).first();
+		const application = await db("applications")
+			.where({ id: applicationId })
+			.first();
 		if (!application) return res.sendStatus(404);
 
 		const docs = await db("application_documents")
