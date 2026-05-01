@@ -2,7 +2,6 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiRequest } from '@/lib/api';
-import AuthGuard from '@/components/AuthGuard';
 import Sidebar from '@/components/Sidebar';
 
 function NewApplicationForm() {
@@ -44,8 +43,7 @@ function NewApplicationForm() {
   };
 
   return (
-    <AuthGuard>
-      <div className="flex min-h-screen bg-zinc-50">
+    <div className="flex min-h-screen bg-zinc-50">
         <Sidebar role={user?.role || 'student'} />
         <div className="flex-1 flex flex-col">
           <header className="h-16 bg-white border-b px-8 flex items-center">
@@ -112,8 +110,7 @@ function NewApplicationForm() {
             </div>
           </main>
         </div>
-      </div>
-    </AuthGuard>
+    </div>
   );
 }
 

@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '@/lib/api';
-import AuthGuard from '@/components/AuthGuard';
 import Sidebar from '@/components/Sidebar';
 
 export default function ApplicationsPage() {
@@ -23,8 +22,7 @@ export default function ApplicationsPage() {
     'bg-yellow-100 text-yellow-700';
 
   return (
-    <AuthGuard>
-      <div className="flex min-h-screen bg-zinc-50">
+    <div className="flex min-h-screen bg-zinc-50">
         <Sidebar role={user?.role || 'student'} />
         <div className="flex-1 flex flex-col">
           <header className="h-16 bg-white border-b px-8 flex items-center justify-between">
@@ -83,7 +81,6 @@ export default function ApplicationsPage() {
             )}
           </main>
         </div>
-      </div>
-    </AuthGuard>
+    </div>
   );
 }

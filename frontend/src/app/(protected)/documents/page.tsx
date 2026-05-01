@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import { apiRequest, apiUpload } from '@/lib/api';
-import AuthGuard from '@/components/AuthGuard';
 import Sidebar from '@/components/Sidebar';
 
 export default function DocumentsPage() {
@@ -40,8 +39,7 @@ export default function DocumentsPage() {
   };
 
   return (
-    <AuthGuard>
-      <div className="flex min-h-screen bg-zinc-50">
+    <div className="flex min-h-screen bg-zinc-50">
         <Sidebar role={user?.role || 'student'} />
         <div className="flex-1 flex flex-col">
           <header className="h-16 bg-white border-b px-8 flex items-center">
@@ -102,7 +100,6 @@ export default function DocumentsPage() {
             )}
           </main>
         </div>
-      </div>
-    </AuthGuard>
+    </div>
   );
 }

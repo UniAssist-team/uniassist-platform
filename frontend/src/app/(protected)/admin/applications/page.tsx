@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { apiRequest } from '@/lib/api';
-import AuthGuard from '@/components/AuthGuard';
 import Sidebar from '@/components/Sidebar';
 
 export default function AdminApplicationsPage() {
@@ -45,8 +44,7 @@ export default function AdminApplicationsPage() {
     'bg-yellow-100 text-yellow-700';
 
   return (
-    <AuthGuard>
-      <div className="flex min-h-screen bg-zinc-50">
+    <div className="flex min-h-screen bg-zinc-50">
         <Sidebar role={user?.role || 'staff'} />
         <div className="flex-1 flex flex-col">
           <header className="h-16 bg-white border-b px-8 flex items-center justify-between">
@@ -154,7 +152,6 @@ export default function AdminApplicationsPage() {
             )}
           </main>
         </div>
-      </div>
-    </AuthGuard>
+    </div>
   );
 }
