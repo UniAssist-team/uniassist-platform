@@ -20,40 +20,35 @@ export async function inferDiscountsOllama(fileText, possibleDiscounts) {
 async function inferDiscountsCombined(fileText, possibleDiscounts) {
 	const trimmed = fileText.slice(0, MAX_TEXT_CHARS);
 
+	// SYSTEM holds the rules + the discounts catalogue (the stable parts of the
+	// prompt, byte-identical across requests as long as discounts don't change).
+	// USER holds only the per-document text. This layout maximises Ollama
+	// KV-cache prefix reuse — moving the catalogue back into USER would
+	// invalidate the cache on every request. See plan: prompt-prefix caching.
+	const systemContent =
+		"You analyse student support documents and decide which discounts they evidence.\n\n" +
+		"Reply ONLY with JSON of shape " +
+		'{"summary": {"documentType": string, "keywords": string[], "facts": object}, ' +
+		'"matches": [{"discountId": string, "confidence": number, "reason": string}]}.\n\n' +
+		"summary.documentType is a short label (e.g. 'transcript', 'application form').\n" +
+		"summary.keywords are 3-10 short eligibility-relevant phrases.\n" +
+		"summary.facts is a flat object of concrete claims (gpa, income, citizenship, disability code, etc.).\n\n" +
+		"Matching rules:\n" +
+		"- Use general world knowledge to bridge document facts to discount eligibility. " +
+		"Example: a person with citizenship of a non-EU country supports an 'International Student' discount, even if the document is not literally a visa.\n" +
+		"- A discount's `requiredDocuments` field lists the IDEAL supporting evidence. A different document type can still be PARTIAL evidence if its content is relevant; reflect this in confidence rather than excluding the match.\n" +
+		"- Confidence calibration:\n" +
+		"  * 0.8-1.0 : the document explicitly proves eligibility (e.g. a transcript with a top-10% GPA for 'Academic Excellence').\n" +
+		"  * 0.4-0.7 : the document contains facts that support eligibility but a follow-up document or inference is needed.\n" +
+		"  * 0.1-0.3 : weak/speculative — still worth surfacing for a human reviewer.\n" +
+		"- Prefer surfacing a low-confidence match over returning an empty list. A human reviewer triages.\n" +
+		"- discountId MUST be one of the provided ids in the AVAILABLE DISCOUNTS list below. reason is one short sentence citing the specific fact(s) from the document.\n\n" +
+		"AVAILABLE DISCOUNTS (stable order; order does not convey priority):\n" +
+		serializeDiscountsStable(possibleDiscounts);
+
 	const result = await chatJson([
-		{
-			role: "system",
-			content:
-				"You analyse student support documents and decide which discounts they evidence.\n\n" +
-				"Reply ONLY with JSON of shape " +
-				'{"summary": {"documentType": string, "keywords": string[], "facts": object}, ' +
-				'"matches": [{"discountId": string, "confidence": number, "reason": string}]}.\n\n' +
-				"summary.documentType is a short label (e.g. 'transcript', 'application form').\n" +
-				"summary.keywords are 3-10 short eligibility-relevant phrases.\n" +
-				"summary.facts is a flat object of concrete claims (gpa, income, citizenship, disability code, etc.).\n\n" +
-				"Matching rules:\n" +
-				"- Use general world knowledge to bridge document facts to discount eligibility. " +
-				"Example: a person with citizenship of a non-EU country supports an 'International Student' discount, even if the document is not literally a visa.\n" +
-				"- A discount's `requiredDocuments` field lists the IDEAL supporting evidence. A different document type can still be PARTIAL evidence if its content is relevant; reflect this in confidence rather than excluding the match.\n" +
-				"- Confidence calibration:\n" +
-				"  * 0.8-1.0 : the document explicitly proves eligibility (e.g. a transcript with a top-10% GPA for 'Academic Excellence').\n" +
-				"  * 0.4-0.7 : the document contains facts that support eligibility but a follow-up document or inference is needed.\n" +
-				"  * 0.1-0.3 : weak/speculative — still worth surfacing for a human reviewer.\n" +
-				"- Prefer surfacing a low-confidence match over returning an empty list. A human reviewer triages.\n" +
-				"- discountId MUST be one of the provided ids. reason is one short sentence citing the specific fact(s) from the document.",
-		},
-		{
-			role: "user",
-			content: JSON.stringify({
-				text: trimmed,
-				discounts: possibleDiscounts.map((d) => ({
-					id: d.id,
-					name: d.name,
-					description: d.description,
-					requiredDocuments: d.requiredDocuments,
-				})),
-			}),
-		},
+		{ role: "system", content: systemContent },
+		{ role: "user", content: trimmed },
 	]);
 
 	const validIds = new Set(possibleDiscounts.map((d) => d.id));
@@ -65,6 +60,25 @@ async function inferDiscountsCombined(fileText, possibleDiscounts) {
 			? result.matches
 			: [];
 	return normalizeMatches(raw, validIds);
+}
+
+/**
+ * Stable, deterministic serialisation of the discount catalogue. Sorts by id
+ * and emits each discount with a fixed key order so the resulting string is
+ * byte-identical across requests (a prerequisite for Ollama prefix caching).
+ *
+ * @param {import("./file-processor").Discount[]} discounts
+ * @returns {string}
+ */
+function serializeDiscountsStable(discounts) {
+	const sorted = [...discounts].sort((a, b) => a.id.localeCompare(b.id));
+	const stable = sorted.map((d) => ({
+		id: d.id,
+		name: d.name,
+		description: d.description,
+		requiredDocuments: d.requiredDocuments,
+	}));
+	return JSON.stringify(stable, null, 2);
 }
 
 /**
