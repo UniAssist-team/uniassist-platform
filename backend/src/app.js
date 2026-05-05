@@ -11,6 +11,7 @@ import discountsRouter from "./routers/discounts.js";
 import documentsRouter from "./routers/documents.js";
 import applicationsRouter from "./routers/applications.js";
 import adminRouter from "./routers/admin.js";
+import { prewarmOcr } from "./core/ocr.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -58,5 +59,9 @@ app.use("/", documentsRouter);
 app.use("/", applicationsRouter);
 app.use("/", adminRouter);
 app.use(errorHandler);
+
+prewarmOcr().catch((err) => {
+	console.warn("[ocr] prewarm failed:", err.message);
+});
 
 export default app;

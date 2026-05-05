@@ -8,36 +8,44 @@ const MAX_TEXT_CHARS = 24000;
  * @returns {Promise<import("./file-processor").DiscountMatch[]>}
  */
 export async function inferDiscountsOllama(fileText, possibleDiscounts) {
+	return inferDiscountsCombined(fileText, possibleDiscounts);
+}
+
+/**
+ * 
+ * @param {string} fileText 
+ * @param {import("./file-processor").Discount[]} possibleDiscounts 
+ * @returns 
+ */
+async function inferDiscountsCombined(fileText, possibleDiscounts) {
 	const trimmed = fileText.slice(0, MAX_TEXT_CHARS);
 
-	const summary = await chatJson([
+	const result = await chatJson([
 		{
 			role: "system",
 			content:
-				"You analyse student support documents. Reply ONLY with JSON of shape " +
-				'{"documentType": string, "keywords": string[], "facts": object}. ' +
-				"documentType is a short label (e.g. 'transcript', 'medical certificate'). " +
-				"keywords are 3-10 short phrases capturing eligibility-relevant content. " +
-				"facts is a flat object of any concrete claims (gpa, income, disability code, etc.).",
-		},
-		{ role: "user", content: trimmed },
-	]);
-
-	const matchResult = await chatJson([
-		{
-			role: "system",
-			content:
-				"You decide which student discounts a document supports as evidence. " +
-				"You receive a structured summary of the document and a list of available discounts. " +
-				'Reply ONLY with JSON of shape {"matches": [{"discountId": string, "confidence": number, "reason": string}]}. ' +
-				"discountId MUST be one of the provided ids. confidence is between 0 and 1. " +
-				"reason is one short sentence citing evidence from the summary. " +
-				"Return an empty matches array if nothing fits.",
+				"You analyse student support documents and decide which discounts they evidence.\n\n" +
+				"Reply ONLY with JSON of shape " +
+				'{"summary": {"documentType": string, "keywords": string[], "facts": object}, ' +
+				'"matches": [{"discountId": string, "confidence": number, "reason": string}]}.\n\n' +
+				"summary.documentType is a short label (e.g. 'transcript', 'application form').\n" +
+				"summary.keywords are 3-10 short eligibility-relevant phrases.\n" +
+				"summary.facts is a flat object of concrete claims (gpa, income, citizenship, disability code, etc.).\n\n" +
+				"Matching rules:\n" +
+				"- Use general world knowledge to bridge document facts to discount eligibility. " +
+				"Example: a person with citizenship of a non-EU country supports an 'International Student' discount, even if the document is not literally a visa.\n" +
+				"- A discount's `requiredDocuments` field lists the IDEAL supporting evidence. A different document type can still be PARTIAL evidence if its content is relevant; reflect this in confidence rather than excluding the match.\n" +
+				"- Confidence calibration:\n" +
+				"  * 0.8-1.0 : the document explicitly proves eligibility (e.g. a transcript with a top-10% GPA for 'Academic Excellence').\n" +
+				"  * 0.4-0.7 : the document contains facts that support eligibility but a follow-up document or inference is needed.\n" +
+				"  * 0.1-0.3 : weak/speculative — still worth surfacing for a human reviewer.\n" +
+				"- Prefer surfacing a low-confidence match over returning an empty list. A human reviewer triages.\n" +
+				"- discountId MUST be one of the provided ids. reason is one short sentence citing the specific fact(s) from the document.",
 		},
 		{
 			role: "user",
 			content: JSON.stringify({
-				summary,
+				text: trimmed,
 				discounts: possibleDiscounts.map((d) => ({
 					id: d.id,
 					name: d.name,
@@ -49,14 +57,22 @@ export async function inferDiscountsOllama(fileText, possibleDiscounts) {
 	]);
 
 	const validIds = new Set(possibleDiscounts.map((d) => d.id));
-	/** @type {any[]} */
 	const raw =
-		typeof matchResult === "object" &&
-		matchResult !== null &&
-		"matches" in matchResult &&
-		Array.isArray(matchResult.matches)
-			? matchResult.matches
+		typeof result === "object" &&
+		result !== null &&
+		"matches" in result &&
+		Array.isArray(result.matches)
+			? result.matches
 			: [];
+	return normalizeMatches(raw, validIds);
+}
+
+/**
+ * @param {any[]} raw
+ * @param {Set<string>} validIds
+ * @returns {import("./file-processor").DiscountMatch[]}
+ */
+function normalizeMatches(raw, validIds) {
 	return raw
 		.filter(
 			(m) =>

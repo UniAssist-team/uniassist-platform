@@ -41,6 +41,7 @@ router.get("/documents/:documentId/file", requireAuth, async (req, res) => {
 });
 
 router.post("/documents/upload", requireAuth, async (req, res) => {
+	const t0 = performance.now();
 	const file = /** @type {Express.Multer.File | undefined} */ (
 		Array.isArray(req.files) ? req.files[0] : req.file
 	);
@@ -71,20 +72,35 @@ router.post("/documents/upload", requireAuth, async (req, res) => {
 
 	await fs.rename(file.path, storagePath);
 
-	let text = await extractTextFromPdf(storagePath);
+	const tExtractStart = performance.now();
+	const [extractedText, discounts] = await Promise.all([
+		extractTextFromPdf(storagePath),
+		db("discounts").select(
+			"id",
+			"name",
+			"description",
+			"required_documents as requiredDocuments",
+		),
+	]);
+	const extractMs = Math.round(performance.now() - tExtractStart);
+
+	let text = extractedText;
+	let ocrMs = 0;
+	let pageCount = 0;
 	if (text.trim().length < OCR_FALLBACK_TEXT_LIMIT) {
-		const ocrText = await extractTextFromPdfImages(storagePath);
-		text = ocrText ? `${text}\n\n${ocrText}` : text;
+		const tOcrStart = performance.now();
+		const ocrResult = await extractTextFromPdfImages(storagePath);
+		ocrMs = Math.round(performance.now() - tOcrStart);
+		pageCount = ocrResult.pageCount;
+		text = ocrResult.text ? `${text}\n\n${ocrResult.text}` : text;
 	}
-	const discounts = await db("discounts").select(
-		"id",
-		"name",
-		"description",
-		"required_documents as requiredDocuments",
-	);
+
+	const tLlmStart = performance.now();
 	const matches = await inferDiscounts(text, discounts);
+	const llmMs = Math.round(performance.now() - tLlmStart);
 
 	const id = randomUUID();
+	const tInsertStart = performance.now();
 	await db("documents").insert({
 		id,
 		user_id: req.user.id,
@@ -94,7 +110,13 @@ router.post("/documents/upload", requireAuth, async (req, res) => {
 	});
 
 	const doc = await db("documents").where({ id }).first();
+	const insertMs = Math.round(performance.now() - tInsertStart);
 	if (!doc) return res.sendStatus(500);
+
+	const totalMs = Math.round(performance.now() - t0);
+	console.log(
+		`[upload] doc=${id} bytes=${file.size} pages=${pageCount} extract=${extractMs}ms ocr=${ocrMs}ms llm=${llmMs}ms dbInsert=${insertMs}ms total=${totalMs}ms`,
+	);
 
 	return res.status(201).json({
 		id: doc.id,

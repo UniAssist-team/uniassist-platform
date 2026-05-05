@@ -10,8 +10,10 @@ vi.mock("../src/core/file-processor.js", () => ({
 }));
 
 vi.mock("../src/core/ocr.js", () => ({
-	extractTextFromPdfImages: vi.fn(async () => ""),
+	extractTextFromPdfImages: vi.fn(async () => ({ text: "", pageCount: 0 })),
 	OCR_FALLBACK_TEXT_LIMIT: 200,
+	prewarmOcr: vi.fn(async () => {}),
+	terminateOcrWorkers: vi.fn(async () => {}),
 }));
 
 const fileProcessor = await import("../src/core/file-processor.js");
@@ -40,7 +42,9 @@ beforeEach(async () => {
 	vi.mocked(fileProcessor.ensurePdf).mockReset().mockResolvedValue(undefined);
 	vi.mocked(fileProcessor.extractTextFromPdf).mockReset().mockResolvedValue("");
 	vi.mocked(fileProcessor.inferDiscounts).mockReset().mockResolvedValue([]);
-	vi.mocked(ocr.extractTextFromPdfImages).mockReset().mockResolvedValue("");
+	vi.mocked(ocr.extractTextFromPdfImages)
+		.mockReset()
+		.mockResolvedValue({ text: "", pageCount: 0 });
 });
 
 afterAll(async () => {
@@ -73,7 +77,10 @@ describe("POST /documents/upload", () => {
 		const user = await createUser();
 		const token = await createSession(user.id);
 		vi.mocked(fileProcessor.extractTextFromPdf).mockResolvedValue("short");
-		vi.mocked(ocr.extractTextFromPdfImages).mockResolvedValue("OCR EXTRACTED TEXT");
+		vi.mocked(ocr.extractTextFromPdfImages).mockResolvedValue({
+			text: "OCR EXTRACTED TEXT",
+			pageCount: 1,
+		});
 
 		const res = await request(app)
 			.post("/documents/upload")
