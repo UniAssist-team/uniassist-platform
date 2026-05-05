@@ -149,7 +149,7 @@ describe("GET /admin/applications", () => {
 			.set("Authorization", `Bearer ${adminToken}`)
 			.send({ status: "approved" });
 
-		// Filter for pending — should be empty
+		// Filter for pending - should be empty
 		const res = await request(app)
 			.get("/admin/applications?status=pending")
 			.set("Authorization", `Bearer ${adminToken}`);
@@ -157,7 +157,7 @@ describe("GET /admin/applications", () => {
 		expect(res.status).toBe(200);
 		expect(res.body).toHaveLength(0);
 
-		// Filter for approved — should find it
+		// Filter for approved - should find it
 		const res2 = await request(app)
 			.get("/admin/applications?status=approved")
 			.set("Authorization", `Bearer ${adminToken}`);

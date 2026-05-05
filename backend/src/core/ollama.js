@@ -23,7 +23,7 @@ async function inferDiscountsCombined(fileText, possibleDiscounts) {
 	// SYSTEM holds the rules + the discounts catalogue (the stable parts of the
 	// prompt, byte-identical across requests as long as discounts don't change).
 	// USER holds only the per-document text. This layout maximises Ollama
-	// KV-cache prefix reuse — moving the catalogue back into USER would
+	// KV-cache prefix reuse - moving the catalogue back into USER would
 	// invalidate the cache on every request. See plan: prompt-prefix caching.
 	const systemContent =
 		"You analyse student support documents and decide which discounts they evidence.\n\n" +
@@ -40,7 +40,7 @@ async function inferDiscountsCombined(fileText, possibleDiscounts) {
 		"- Confidence calibration:\n" +
 		"  * 0.8-1.0 : the document explicitly proves eligibility (e.g. a transcript with a top-10% GPA for 'Academic Excellence').\n" +
 		"  * 0.4-0.7 : the document contains facts that support eligibility but a follow-up document or inference is needed.\n" +
-		"  * 0.1-0.3 : weak/speculative — still worth surfacing for a human reviewer.\n" +
+		"  * 0.1-0.3 : weak/speculative - still worth surfacing for a human reviewer.\n" +
 		"- Prefer surfacing a low-confidence match over returning an empty list. A human reviewer triages.\n" +
 		"- discountId MUST be one of the provided ids in the AVAILABLE DISCOUNTS list below. reason is one short sentence citing the specific fact(s) from the document.\n\n" +
 		"AVAILABLE DISCOUNTS (stable order; order does not convey priority):\n" +
