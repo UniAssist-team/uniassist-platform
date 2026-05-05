@@ -4,7 +4,6 @@ import { apiRequest } from '@/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<'student' | 'admin'>('student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -36,13 +35,6 @@ export default function LoginPage() {
   }, [router]);
 
   if (checking) return null;
-
-  const switchMode = (m: 'student' | 'admin') => {
-    setMode(m);
-    setError('');
-    setEmail('');
-    setPassword('');
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,55 +73,18 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Tab switcher */}
-        <div className="flex bg-zinc-200 rounded-xl p-1 mb-6">
-          <button
-            type="button"
-            onClick={() => switchMode('student')}
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
-              mode === 'student'
-                ? 'bg-white text-zinc-900 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-700'
-            }`}
-          >
-            Student
-          </button>
-          <button
-            type="button"
-            onClick={() => switchMode('admin')}
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
-              mode === 'admin'
-                ? 'bg-white text-zinc-900 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-700'
-            }`}
-          >
-            Admin / Staff
-          </button>
-        </div>
-
         {/* Form card */}
         <form
           onSubmit={handleLogin}
           className="bg-white border border-zinc-200 rounded-xl p-8 shadow-sm"
         >
-          <h2 className="text-lg font-semibold text-zinc-800 mb-5">
-            {mode === 'admin' ? 'Admin & Staff Sign In' : 'Student Sign In'}
-          </h2>
+          <h2 className="text-lg font-semibold text-zinc-800 mb-5">Sign In</h2>
 
           {/* Success banner from registration */}
           {justRegistered && (
             <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 mb-5">
               <p className="text-green-700 text-sm font-medium">
                 Account created! You can now sign in.
-              </p>
-            </div>
-          )}
-
-          {mode === 'admin' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-5">
-              <p className="text-xs text-blue-700 font-medium">
-                Admin and staff accounts are created by the system administrator.
-                Contact your admin if you need access.
               </p>
             </div>
           )}
@@ -169,23 +124,17 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full p-2.5 rounded-lg font-medium text-sm transition-colors ${
-              mode === 'admin'
-                ? 'bg-zinc-800 hover:bg-zinc-900 text-white disabled:opacity-50'
-                : 'bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50'
-            }`}
+            className="w-full p-2.5 rounded-lg font-medium text-sm transition-colors bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
 
-          {mode === 'student' && (
-            <p className="mt-4 text-center text-sm text-zinc-600">
-              Don't have an account?{' '}
-              <a href="/register" className="text-blue-600 hover:underline">
-                Register here
-              </a>
-            </p>
-          )}
+          <p className="mt-4 text-center text-sm text-zinc-600">
+            Don't have an account?{' '}
+            <a href="/register" className="text-blue-600 hover:underline">
+              Register here
+            </a>
+          </p>
         </form>
       </div>
     </div>

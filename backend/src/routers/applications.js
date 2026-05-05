@@ -3,6 +3,7 @@ import { Router } from "express";
 import db from "../db.js";
 import { requireAuth } from "../middleware.js";
 import { toISO } from "../format.js";
+import { pickLeastLoadedStaffId } from "../core/assignment.js";
 
 const router = Router();
 
@@ -90,11 +91,14 @@ router.post("/applications", requireAuth, async (req, res) => {
 		return res.status(400).json({ message: "One or more documents not found" });
 	}
 
+	const reviewerId = await pickLeastLoadedStaffId(db);
+
 	const id = randomUUID();
 	await db("applications").insert({
 		id,
 		user_id: req.user.id,
 		discount_id: discountId,
+		reviewed_by: reviewerId,
 	});
 
 	await db("application_documents").insert(

@@ -74,6 +74,49 @@ paths:
         "401":
           description: Not authenticated
 
+  /session/send-reset:
+    post:
+      summary: Request a password reset email
+      description: |
+        Sends a one-time reset token to the supplied email address.
+        Always responds with 204 regardless of whether the email is
+        registered, to avoid leaking which addresses have accounts.
+        The token is valid for 1 hour.
+      tags: [Session]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendResetRequest"
+      responses:
+        "204":
+          description: Request accepted (email sent if address is registered)
+        "400":
+          description: Missing email
+
+  /session/confirm-reset:
+    post:
+      summary: Complete a password reset
+      description: |
+        Exchanges a reset token (from the email) plus a new password for
+        an updated account. On success, the token is consumed and all of
+        the user's existing sessions are invalidated, forcing re-login.
+      tags: [Session]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmResetRequest"
+      responses:
+        "204":
+          description: Password updated; existing sessions invalidated
+        "400":
+          description: Missing token or password
+        "401":
+          description: Token unknown or expired
+
   /documents:
     get:
       summary: List user's documents
@@ -264,7 +307,11 @@ paths:
 
   /admin/applications:
     get:
-      summary: List all applications (staff)
+      summary: List applications (staff/admin)
+      description: |
+        Admins see every application. Staff see only the applications
+        assigned to them (`reviewed_by = self`) by default; pass
+        `assignedTo=all` to see every application instead.
       tags: [Admin]
       security:
         - BearerAuth: []
@@ -274,6 +321,15 @@ paths:
           schema:
             type: string
             enum: [pending, approved, rejected]
+        - name: assignedTo
+          in: query
+          description: |
+            For staff callers: pass `all` to bypass the default
+            "only assigned to me" filter. Ignored for admins (they
+            always see everything).
+          schema:
+            type: string
+            enum: [all]
         - name: page
           in: query
           schema:
@@ -611,6 +667,24 @@ components:
         password:
           type: string
 
+    SendResetRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    ConfirmResetRequest:
+      type: object
+      required: [token, password]
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+          minLength: 1
+
     LoginResponse:
       type: object
       properties:
@@ -718,6 +792,15 @@ components:
               type: string
             userEmail:
               type: string
+            reviewedBy:
+              type: string
+              nullable: true
+              description: |
+                ID of the staff user this application is assigned to
+                (auto-assigned at creation to the staff user with the
+                fewest pending applications). Null when no staff users
+                existed at creation time. Overwritten with the actual
+                reviewer's id once the application is approved/rejected.
 
     ReviewApplicationRequest:
       type: object

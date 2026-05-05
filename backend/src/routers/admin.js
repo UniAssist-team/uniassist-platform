@@ -44,6 +44,10 @@ router.get(
 			baseQuery.where("applications.status", req.query.status);
 		}
 
+		if (req.user.role === "staff" && req.query.assignedTo !== "all") {
+			baseQuery.where("applications.reviewed_by", req.user.id);
+		}
+
 		const counts = /** @type {Array<{ count: number | string }>} */ (
 			await baseQuery.clone().count("applications.id as count")
 		);
@@ -54,6 +58,7 @@ router.get(
 				"applications.id",
 				"applications.status",
 				"applications.review_note as reviewNote",
+				"applications.reviewed_by as reviewedBy",
 				"applications.created_at as createdAt",
 				"applications.updated_at as updatedAt",
 				"discounts.id as discountId",

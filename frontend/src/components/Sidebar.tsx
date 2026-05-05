@@ -23,7 +23,7 @@ export default function Sidebar({ role }: { role: string }) {
     .filter(item => !('adminOnly' in item && item.adminOnly) || role === 'admin');
 
   return (
-    <aside className="w-64 bg-zinc-900 text-white flex flex-col min-h-screen">
+    <aside className="w-64 bg-zinc-900 text-white flex flex-col sticky top-0 self-start h-screen">
       <div className="p-6 text-xl font-bold border-b border-zinc-700 tracking-tight">
         UniAssist
       </div>

@@ -49,17 +49,76 @@ describe("GET /admin/applications", () => {
 		expect(res.body[0]).toHaveProperty("userEmail");
 	});
 
-	it("returns all applications as staff", async () => {
-		const staff = await createUser({ email: "staff@example.com", role: "staff" });
+	it("returns only assigned applications as staff by default", async () => {
+		const staffA = await createUser({ email: "a@example.com", role: "staff" });
+		const staffB = await createUser({ email: "b@example.com", role: "staff" });
 		const student = await createUser({ email: "student@example.com" });
-		const staffToken = await createSession(staff.id);
+		const staffAToken = await createSession(staffA.id);
 		const studentToken = await createSession(student.id);
 
-		await createApplicationForUser(student, studentToken, discounts[0].id);
+		const created = await createApplicationForUser(
+			student,
+			studentToken,
+			discounts[0].id,
+		);
+		// Force the application to be assigned to staffB so staffA shouldn't see it
+		await db("applications")
+			.where({ id: created.id })
+			.update({ reviewed_by: staffB.id });
 
 		const res = await request(app)
 			.get("/admin/applications")
-			.set("Authorization", `Bearer ${staffToken}`);
+			.set("Authorization", `Bearer ${staffAToken}`);
+
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveLength(0);
+		expect(res.headers["x-total-count"]).toBe("0");
+	});
+
+	it("returns all applications as staff with assignedTo=all", async () => {
+		const staffA = await createUser({ email: "a@example.com", role: "staff" });
+		const staffB = await createUser({ email: "b@example.com", role: "staff" });
+		const student = await createUser({ email: "student@example.com" });
+		const staffAToken = await createSession(staffA.id);
+		const studentToken = await createSession(student.id);
+
+		const created = await createApplicationForUser(
+			student,
+			studentToken,
+			discounts[0].id,
+		);
+		await db("applications")
+			.where({ id: created.id })
+			.update({ reviewed_by: staffB.id });
+
+		const res = await request(app)
+			.get("/admin/applications?assignedTo=all")
+			.set("Authorization", `Bearer ${staffAToken}`);
+
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveLength(1);
+		expect(res.body[0].reviewedBy).toBe(staffB.id);
+	});
+
+	it("admin sees all applications regardless of assignedTo", async () => {
+		const admin = await createUser({ email: "admin@example.com", role: "admin" });
+		const staff = await createUser({ email: "staff@example.com", role: "staff" });
+		const student = await createUser({ email: "student@example.com" });
+		const adminToken = await createSession(admin.id);
+		const studentToken = await createSession(student.id);
+
+		const created = await createApplicationForUser(
+			student,
+			studentToken,
+			discounts[0].id,
+		);
+		await db("applications")
+			.where({ id: created.id })
+			.update({ reviewed_by: staff.id });
+
+		const res = await request(app)
+			.get("/admin/applications")
+			.set("Authorization", `Bearer ${adminToken}`);
 
 		expect(res.status).toBe(200);
 		expect(res.body).toHaveLength(1);
