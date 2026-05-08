@@ -11,7 +11,7 @@ const studentNav = [
 ];
 
 const adminNav = [
-  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/admin/dashboard', label: 'Dashboard' },
   { href: '/admin/applications', label: 'Application Queue' },
   { href: '/admin/users', label: 'User Management', adminOnly: true },
 ];
