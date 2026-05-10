@@ -1,12 +1,29 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import { apiRequest } from '@/lib/api';
+import { useUser } from '@/contexts/UserContext';
+import PageHeader from '@/components/layout/PageHeader';
+import {
+  cardClass,
+  dataTableHeadClass,
+  dataTableWrapClass,
+  inputClass,
+  primaryButtonAutoClass,
+  secondaryButtonClass,
+} from '@/components/layout/appChrome';
 
 export default function AdminUsersPage() {
+  const { user, loading: sessionLoading } = useUser();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'staff' });
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'staff',
+  });
   const [formError, setFormError] = useState('');
 
   const load = () => {
@@ -16,7 +33,14 @@ export default function AdminUsersPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (sessionLoading || !user) return;
+    if (user.role !== 'admin') {
+      setLoading(false);
+      return;
+    }
+    load();
+  }, [user, sessionLoading]);
 
   const handleCreate = async () => {
     setFormError('');
@@ -28,8 +52,8 @@ export default function AdminUsersPage() {
       setShowCreate(false);
       setForm({ name: '', email: '', password: '', role: 'staff' });
       load();
-    } catch (e: any) {
-      setFormError(e.message);
+    } catch (e: unknown) {
+      setFormError(e instanceof Error ? e.message : 'Request failed.');
     }
   };
 
@@ -47,112 +71,187 @@ export default function AdminUsersPage() {
     load();
   };
 
+  if (sessionLoading || !user) {
+    return (
+      <>
+        <PageHeader title="User management" />
+        <main className="flex-1 p-6 sm:p-8">
+          <div className="flex items-center gap-3 text-sm text-slate-500">
+            <span
+              className="h-5 w-5 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600"
+              aria-hidden
+            />
+            Loading…
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  if (user.role !== 'admin') {
+    return (
+      <>
+        <PageHeader title="User management" />
+        <main className="flex-1 p-6 sm:p-8">
+          <div className="rounded-2xl border border-amber-200/90 bg-amber-50/90 px-5 py-4 text-sm text-amber-950">
+            This area is restricted to administrators. Staff accounts cannot view or
+            manage users.
+          </div>
+        </main>
+      </>
+    );
+  }
+
   return (
     <>
-          <header className="h-16 bg-white border-b px-8 flex items-center justify-between">
-            <h1 className="font-semibold text-zinc-800 text-lg">User Management</h1>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-            >
-              + Create staff account
-            </button>
-          </header>
-          <main className="p-8">
-            {loading ? <p className="text-zinc-400">Loading...</p> : (
-              <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-zinc-50 text-zinc-500 text-left">
-                    <tr>
-                      <th className="px-6 py-3 font-medium">Name</th>
-                      <th className="px-6 py-3 font-medium">Email</th>
-                      <th className="px-6 py-3 font-medium">Role</th>
-                      <th className="px-6 py-3 font-medium">Joined</th>
-                      <th className="px-6 py-3 font-medium">Actions</th>
+      <PageHeader
+        title="User management"
+        description="Create staff and student accounts, assign roles, and remove users (admin only)."
+        actions={
+          <button
+            type="button"
+            onClick={() => setShowCreate(true)}
+            className={primaryButtonAutoClass}
+          >
+            Create account
+          </button>
+        }
+      />
+      <main className="flex-1 p-6 sm:p-8">
+        {loading ? (
+          <div className="flex items-center gap-3 text-sm text-slate-500">
+            <span
+              className="h-5 w-5 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600"
+              aria-hidden
+            />
+            Loading users…
+          </div>
+        ) : (
+          <div className={dataTableWrapClass}>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead className={dataTableHeadClass}>
+                  <tr>
+                    <th className="px-6 py-3 font-medium">Name</th>
+                    <th className="px-6 py-3 font-medium">Email</th>
+                    <th className="px-6 py-3 font-medium">Role</th>
+                    <th className="px-6 py-3 font-medium">Joined</th>
+                    <th className="px-6 py-3 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {users.map((u) => (
+                    <tr key={u.id} className="bg-white/80">
+                      <td className="px-6 py-3 text-slate-900">
+                        {u.name || '—'}
+                      </td>
+                      <td className="px-6 py-3 text-slate-600">{u.email}</td>
+                      <td className="px-6 py-3">
+                        {u.role === 'admin' ? (
+                          <span className="inline-flex rounded-lg bg-violet-100 px-2 py-1 text-xs font-semibold text-violet-800">
+                            admin
+                          </span>
+                        ) : (
+                          <select
+                            value={u.role}
+                            onChange={(e) =>
+                              handleRoleChange(u.id, e.target.value)
+                            }
+                            className={`${inputClass} max-w-[10rem] py-1.5 text-xs`}
+                          >
+                            <option value="student">student</option>
+                            <option value="staff">staff</option>
+                          </select>
+                        )}
+                      </td>
+                      <td className="px-6 py-3 text-slate-500 tabular-nums">
+                        {new Date(u.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-3">
+                        {u.role !== 'admin' ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(u.id, u.email)}
+                            className="text-xs font-semibold text-red-600 hover:text-red-700"
+                          >
+                            Delete
+                          </button>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-100">
-                    {users.map(u => (
-                      <tr key={u.id}>
-                        <td className="px-6 py-3 text-zinc-800">{u.name || '—'}</td>
-                        <td className="px-6 py-3 text-zinc-600">{u.email}</td>
-                        <td className="px-6 py-3">
-                          {u.role === 'admin' ? (
-                            <span className="px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-700">admin</span>
-                          ) : (
-                            <select
-                              value={u.role}
-                              onChange={e => handleRoleChange(u.id, e.target.value)}
-                              className="text-xs border border-zinc-300 rounded px-2 py-1 bg-white"
-                            >
-                              <option value="student">student</option>
-                              <option value="staff">staff</option>
-                            </select>
-                          )}
-                        </td>
-                        <td className="px-6 py-3 text-zinc-400">
-                          {new Date(u.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-3">
-                          {u.role !== 'admin' && (
-                            <button
-                              onClick={() => handleDelete(u.id, u.email)}
-                              className="text-xs text-red-500 hover:text-red-700 font-medium"
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {showCreate && (
-              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-                <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-lg">
-                  <h2 className="font-semibold text-zinc-800 mb-4">Create staff account</h2>
-                  {[
-                    { label: 'Name (optional)', key: 'name', type: 'text' },
-                    { label: 'Email', key: 'email', type: 'email' },
-                    { label: 'Password', key: 'password', type: 'password' },
-                  ].map(f => (
-                    <div key={f.key} className="mb-3">
-                      <label className="block text-xs text-zinc-500 mb-1">{f.label}</label>
-                      <input
-                        type={f.type}
-                        value={(form as any)[f.key]}
-                        onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                        className="w-full border border-zinc-300 rounded-lg p-2 text-sm"
-                      />
-                    </div>
                   ))}
-                  <div className="mb-4">
-                    <label className="block text-xs text-zinc-500 mb-1">Role</label>
-                    <select
-                      value={form.role}
-                      onChange={e => setForm(prev => ({ ...prev, role: e.target.value }))}
-                      className="w-full border border-zinc-300 rounded-lg p-2 text-sm"
-                    >
-                      <option value="staff">staff</option>
-                      <option value="student">student</option>
-                    </select>
-                  </div>
-                  {formError && <p className="text-red-500 text-xs mb-3">{formError}</p>}
-                  <div className="flex gap-3">
-                    <button onClick={handleCreate} className="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-700">
-                      Create
-                    </button>
-                    <button onClick={() => setShowCreate(false)} className="text-sm px-4 py-2 rounded-lg border border-zinc-300 text-zinc-600">
-                      Cancel
-                    </button>
-                  </div>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {showCreate ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
+            <div className={`${cardClass} w-full max-w-sm p-6 shadow-2xl`}>
+              <h2 className="font-semibold text-slate-900">Create account</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Staff or student — cannot create another admin here.
+              </p>
+              {[
+                { label: 'Name (optional)', key: 'name' as const, type: 'text' },
+                { label: 'Email', key: 'email' as const, type: 'email' },
+                { label: 'Password', key: 'password' as const, type: 'password' },
+              ].map((f) => (
+                <div key={f.key} className="mt-4">
+                  <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                    {f.label}
+                  </label>
+                  <input
+                    type={f.type}
+                    value={form[f.key]}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, [f.key]: e.target.value }))
+                    }
+                    className={inputClass}
+                  />
                 </div>
+              ))}
+              <div className="mt-4">
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                  Role
+                </label>
+                <select
+                  value={form.role}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, role: e.target.value }))
+                  }
+                  className={inputClass}
+                >
+                  <option value="staff">staff</option>
+                  <option value="student">student</option>
+                </select>
               </div>
-            )}
-          </main>
+              {formError ? (
+                <p className="mt-3 text-sm text-red-600">{formError}</p>
+              ) : null}
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={handleCreate}
+                  className={primaryButtonAutoClass}
+                >
+                  Create
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreate(false)}
+                  className={secondaryButtonClass}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </main>
     </>
   );
 }

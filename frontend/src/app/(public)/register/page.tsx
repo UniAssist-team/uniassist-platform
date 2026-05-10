@@ -1,7 +1,16 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { apiRequest } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import {
+  AuthShell,
+  authCardClass,
+  authFieldClass,
+  authLabelClass,
+  authLinkClass,
+  authPrimaryButtonClass,
+} from '@/components/auth/AuthShell';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -51,74 +60,76 @@ export default function RegisterPage() {
       });
 
       router.push('/login?registered=true');
-    } catch (err: any) {
-      setError(err.message || 'Registration failed. Email may already be in use.');
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Registration failed.';
+      setError(message || 'Registration failed. Email may already be in use.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-50">
-      <div className="w-96">
+    <AuthShell>
+      <div className="mb-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600/90">
+          New student
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+          Create your account
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">
+          Apply for scholarships, upload documents, and track status from one profile.
+        </p>
+      </div>
 
-        {/* Logo */}
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-zinc-900">UniAssist</h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            University Discount Management Platform
-          </p>
-        </div>
-
-        {/* Form card */}
-        <form
-          onSubmit={handleRegister}
-          className="bg-white border border-zinc-200 rounded-xl p-8 shadow-sm"
+      <form onSubmit={handleRegister} className={authCardClass}>
+        <button
+          type="button"
+          onClick={() => router.push('/login')}
+          className="group mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-slate-800"
         >
-
-          {/* Back button */}
-          <button
-            type="button"
-            onClick={() => router.push('/login')}
-            className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-600 mb-5 transition-colors"
+          <svg
+            className="h-4 w-4 transition group-hover:-translate-x-0.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            Back to login
-          </button>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
+          </svg>
+          Back to sign in
+        </button>
 
-          <h2 className="text-lg font-semibold text-zinc-800 mb-1">
-            Create student account
-          </h2>
-          <p className="text-xs text-zinc-400 mb-5">
-            Student accounts only. Admin and staff accounts are created by administrators.
-          </p>
+        <h2 className="text-lg font-semibold text-slate-900">
+          Student registration
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Student accounts only. Staff and admin accounts are created by
+          administrators.
+        </p>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4">
-              <p className="text-red-600 text-sm">{error}</p>
-            </div>
-          )}
+        {error && (
+          <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+            <p className="text-sm font-medium text-red-700">{error}</p>
+          </div>
+        )}
 
-          {/* Name */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-zinc-700 mb-1">
-              Full name <span className="text-zinc-400 font-normal">(optional)</span>
+        <div className="mt-6 space-y-5">
+          <div>
+            <label htmlFor="register-name" className={authLabelClass}>
+              Full name{' '}
+              <span className="font-normal text-slate-400">(optional)</span>
             </label>
             <input
+              id="register-name"
               type="text"
-              className="w-full p-2 border border-zinc-300 rounded-lg bg-zinc-50 outline-none focus:ring-2 focus:ring-blue-500 text-black text-sm"
+              className={authFieldClass}
               placeholder="e.g. Jane Smith"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -126,14 +137,14 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* Email */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-zinc-700 mb-1">
+          <div>
+            <label htmlFor="register-email" className={authLabelClass}>
               Email
             </label>
             <input
+              id="register-email"
               type="email"
-              className="w-full p-2 border border-zinc-300 rounded-lg bg-zinc-50 outline-none focus:ring-2 focus:ring-blue-500 text-black text-sm"
+              className={authFieldClass}
               placeholder="you@university.edu"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -142,14 +153,14 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* Password */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-zinc-700 mb-1">
+          <div>
+            <label htmlFor="register-password" className={authLabelClass}>
               Password
             </label>
             <input
+              id="register-password"
               type="password"
-              className="w-full p-2 border border-zinc-300 rounded-lg bg-zinc-50 outline-none focus:ring-2 focus:ring-blue-500 text-black text-sm"
+              className={authFieldClass}
               placeholder="At least 6 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -158,14 +169,14 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* Confirm password */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-zinc-700 mb-1">
+          <div>
+            <label htmlFor="register-confirm" className={authLabelClass}>
               Confirm password
             </label>
             <input
+              id="register-confirm"
               type="password"
-              className="w-full p-2 border border-zinc-300 rounded-lg bg-zinc-50 outline-none focus:ring-2 focus:ring-blue-500 text-black text-sm"
+              className={authFieldClass}
               placeholder="Repeat your password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
@@ -173,27 +184,37 @@ export default function RegisterPage() {
               autoComplete="new-password"
             />
           </div>
+        </div>
 
+        <button
+          type="submit"
+          disabled={loading}
+          className={`${authPrimaryButtonClass} mt-8`}
+        >
+          {loading ? (
+            <>
+              <span
+                className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                aria-hidden
+              />
+              Creating account…
+            </>
+          ) : (
+            'Create account'
+          )}
+        </button>
+
+        <p className="mt-6 text-center text-sm text-slate-600">
+          Already registered?{' '}
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full p-2.5 rounded-lg font-medium text-sm bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition-colors"
+            type="button"
+            onClick={() => router.push('/login')}
+            className={`${authLinkClass} bg-transparent`}
           >
-            {loading ? 'Creating account...' : 'Create account'}
+            Sign in instead
           </button>
-
-          <p className="mt-4 text-center text-sm text-zinc-600">
-            Already have an account?{' '}
-            <button
-              type="button"
-              onClick={() => router.push('/login')}
-              className="text-blue-600 hover:underline"
-            >
-              Sign in
-            </button>
-          </p>
-        </form>
-      </div>
-    </div>
+        </p>
+      </form>
+    </AuthShell>
   );
 }

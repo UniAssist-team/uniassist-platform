@@ -1,7 +1,13 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '@/lib/api';
+import PageHeader from '@/components/layout/PageHeader';
+import {
+  cardClass,
+  primaryButtonClass,
+} from '@/components/layout/appChrome';
 
 export default function DiscountsPage() {
   const [discounts, setDiscounts] = useState<any[]>([]);
@@ -16,37 +22,66 @@ export default function DiscountsPage() {
 
   return (
     <>
-          <header className="h-16 bg-white border-b px-8 flex items-center">
-            <h1 className="font-semibold text-zinc-800 text-lg">Available Discounts</h1>
-          </header>
-          <main className="p-8">
-            {loading ? (
-              <p className="text-zinc-400">Loading...</p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {discounts.map(d => (
-                  <div key={d.id} className="bg-white border border-zinc-200 rounded-xl p-6">
-                    <h2 className="font-semibold text-zinc-800 text-base mb-1">{d.name}</h2>
-                    <p className="text-sm text-zinc-500 mb-3">{d.description}</p>
-                    <div className="text-xs space-y-1">
-                      <p><span className="font-medium text-zinc-600">Required documents: </span>
-                        <span className="text-zinc-500">{d.requiredDocuments}</span>
-                      </p>
-                      <p><span className="font-medium text-zinc-600">Benefits: </span>
-                        <span className="text-zinc-500">{d.benefits}</span>
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => router.push('/applications/new?discountId=' + d.id + '&discountName=' + encodeURIComponent(d.name))}
-                      className="mt-4 text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Apply for this discount
-                    </button>
+      <PageHeader
+        title="Scholarships"
+        description="Browse what is available, check required documents, then apply with your uploaded files."
+      />
+      <main className="flex-1 p-6 sm:p-8">
+        {loading ? (
+          <div className="flex items-center gap-3 text-sm text-slate-500">
+            <span
+              className="h-5 w-5 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600"
+              aria-hidden
+            />
+            Loading scholarships…
+          </div>
+        ) : discounts.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-300/90 bg-white/60 px-6 py-14 text-center text-sm text-slate-600">
+            No scholarships are available right now. Check back later.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            {discounts.map((d) => (
+              <article
+                key={d.id}
+                className={`${cardClass} flex flex-col p-6`}
+              >
+                <h2 className="text-base font-semibold text-slate-900">
+                  {d.name}
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  {d.description}
+                </p>
+                <dl className="mt-4 space-y-2 text-xs text-slate-600">
+                  <div>
+                    <dt className="font-semibold text-slate-700">
+                      Required documents
+                    </dt>
+                    <dd className="mt-0.5">{d.requiredDocuments}</dd>
                   </div>
-                ))}
-              </div>
-            )}
-          </main>
+                  <div>
+                    <dt className="font-semibold text-slate-700">Benefits</dt>
+                    <dd className="mt-0.5">{d.benefits}</dd>
+                  </div>
+                </dl>
+                <div className="mt-6">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      router.push(
+                        `/applications/new?discountId=${d.id}&discountName=${encodeURIComponent(d.name)}`,
+                      )
+                    }
+                    className={primaryButtonClass}
+                  >
+                    Apply for this scholarship
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </main>
     </>
   );
 }
