@@ -23,7 +23,7 @@ npm run dev
 
 ## Frontend
 
-Next.js + Material UI
+Next.js + Tailwind CSS
 
 ## Backend
 

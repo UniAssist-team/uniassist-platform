@@ -1,8 +1,18 @@
 'use client';
+
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest, apiUpload } from '@/lib/api';
 import PdfViewer, { type PdfDoc } from '@/components/PdfViewer';
+import PageHeader from '@/components/layout/PageHeader';
+import {
+  cardClass,
+  dataTableHeadClass,
+  dataTableWrapClass,
+  ghostButtonClass,
+  primaryButtonAutoClass,
+  secondaryButtonClass,
+} from '@/components/layout/appChrome';
 
 export default function DocumentsPage() {
   const router = useRouter();
@@ -18,10 +28,16 @@ export default function DocumentsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = () =>
-    Promise.all([apiRequest('/documents'), apiRequest('/discounts')])
-      .then(([docs, ds]) => { setDocuments(docs); setDiscounts(ds); });
+    Promise.all([apiRequest('/documents'), apiRequest('/discounts')]).then(
+      ([docs, ds]) => {
+        setDocuments(docs);
+        setDiscounts(ds);
+      },
+    );
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const handleUpload = async () => {
     const file = fileRef.current?.files?.[0];
@@ -35,14 +51,18 @@ export default function DocumentsPage() {
       if (Array.isArray(result?.matches) && result.matches.length > 0) {
         setMatches({ documentId: result.id, matches: result.matches });
       }
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Upload failed.');
     } finally {
       setUploading(false);
     }
   };
 
-  const applyToDiscount = (discountId: string, discountName: string, documentId: string) => {
+  const applyToDiscount = (
+    discountId: string,
+    discountName: string,
+    documentId: string,
+  ) => {
     router.push(
       `/applications/new?discountId=${discountId}&discountName=${encodeURIComponent(discountName)}&documentId=${documentId}`,
     );
@@ -74,76 +94,109 @@ export default function DocumentsPage() {
 
   return (
     <>
-          <header className="h-16 bg-white border-b px-8 flex items-center">
-            <h1 className="font-semibold text-zinc-800 text-lg">My Documents</h1>
-          </header>
-          <main className="p-8 max-w-3xl">
-            <div className="bg-white border border-zinc-200 rounded-xl p-6 mb-6">
-              <h2 className="font-semibold text-zinc-700 mb-3 text-sm">Upload a document</h2>
-              <div className="flex items-center gap-3">
-                <input
-                  type="file"
-                  ref={fileRef}
-                  className="text-sm text-zinc-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border file:border-zinc-300 file:text-sm file:bg-zinc-50 file:text-zinc-700 hover:file:bg-zinc-100"
-                />
-                <button
-                  onClick={handleUpload}
-                  disabled={uploading}
-                  className="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                >
-                  {uploading ? 'Uploading...' : 'Upload'}
-                </button>
-              </div>
-              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+      <PageHeader
+        title="My documents"
+        description="Upload PDFs and other files to attach when you apply for scholarships. We may suggest relevant awards from the content of your upload."
+      />
+      <main className="flex-1 p-6 sm:p-8">
+        <div className="max-w-3xl">
+          <div className={`${cardClass} mb-8 p-6`}>
+            <h2 className="text-sm font-semibold text-slate-900">
+              Upload a file
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Transcripts, statements, and other required materials.
+            </p>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <input
+                type="file"
+                ref={fileRef}
+                className="w-full min-w-0 text-sm text-slate-600 file:mr-3 file:rounded-lg file:border file:border-slate-200 file:bg-slate-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-800 hover:file:bg-slate-100"
+              />
+              <button
+                type="button"
+                onClick={handleUpload}
+                disabled={uploading}
+                className={primaryButtonAutoClass}
+              >
+                {uploading ? 'Uploading…' : 'Upload'}
+              </button>
             </div>
+            {error ? (
+              <p className="mt-3 text-sm text-red-600">{error}</p>
+            ) : null}
+          </div>
 
-            {documents.length === 0 ? (
-              <p className="text-zinc-400 text-sm">No documents uploaded yet.</p>
-            ) : (
-              <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-zinc-50 text-zinc-500 text-left">
+          {documents.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300/90 bg-white/60 px-6 py-12 text-center">
+              <p className="text-sm font-medium text-slate-700">
+                No documents yet
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                Upload files above — they will appear here for use on applications.
+              </p>
+            </div>
+          ) : (
+            <div className={dataTableWrapClass}>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[560px] text-sm">
+                  <thead className={dataTableHeadClass}>
                     <tr>
                       <th className="px-6 py-3 font-medium">Filename</th>
                       <th className="px-6 py-3 font-medium">Uploaded</th>
-                      <th className="px-6 py-3 font-medium"></th>
+                      <th className="px-6 py-3 text-right font-medium">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-100">
-                    {documents.map(doc => (
-                      <tr key={doc.id}>
-                        <td className="px-6 py-3 text-zinc-800">{doc.filename}</td>
-                        <td className="px-6 py-3 text-zinc-400">
+                  <tbody className="divide-y divide-slate-100">
+                    {documents.map((doc) => (
+                      <tr key={doc.id} className="bg-white/80">
+                        <td className="px-6 py-3 font-medium text-slate-900">
+                          {doc.filename}
+                        </td>
+                        <td className="px-6 py-3 text-slate-500 tabular-nums">
                           {new Date(doc.uploadedAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-3 text-right">
-                          <div className="flex gap-3 justify-end items-center">
-                            {doc.matches?.length > 0 && (
+                          <div className="flex flex-wrap justify-end gap-2">
+                            {doc.matches?.length > 0 ? (
                               <button
-                                onClick={() => setMatches({ documentId: doc.id, matches: doc.matches })}
-                                className="text-xs font-medium bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"
+                                type="button"
+                                onClick={() =>
+                                  setMatches({
+                                    documentId: doc.id,
+                                    matches: doc.matches,
+                                  })
+                                }
+                                className="rounded-lg bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-200"
                               >
-                                Suggested discounts
+                                Suggested scholarships
                               </button>
-                            )}
+                            ) : null}
                             <button
-                              onClick={() => setViewingDoc({
-                                filename: doc.filename,
-                                fileUrl: `/api/documents/${doc.id}/file`,
-                              })}
-                              className="text-zinc-600 hover:text-zinc-800 text-xs font-medium"
+                              type="button"
+                              onClick={() =>
+                                setViewingDoc({
+                                  filename: doc.filename,
+                                  fileUrl: `/api/documents/${doc.id}/file`,
+                                })
+                              }
+                              className={ghostButtonClass}
                             >
                               View
                             </button>
                             <button
-                              onClick={() => handleDownload(doc.id, doc.filename)}
-                              className="text-blue-600 hover:text-blue-700 text-xs font-medium"
+                              type="button"
+                              onClick={() =>
+                                handleDownload(doc.id, doc.filename)
+                              }
+                              className={`${ghostButtonClass} text-indigo-600 hover:text-indigo-700`}
                             >
                               Download
                             </button>
                             <button
+                              type="button"
                               onClick={() => handleDelete(doc.id)}
-                              className="text-red-500 hover:text-red-700 text-xs font-medium"
+                              className={`${ghostButtonClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
                             >
                               Delete
                             </button>
@@ -154,54 +207,76 @@ export default function DocumentsPage() {
                   </tbody>
                 </table>
               </div>
-            )}
-          </main>
+            </div>
+          )}
+        </div>
+      </main>
 
-        {viewingDoc && (
-          <PdfViewer
-            documents={[viewingDoc]}
-            title={viewingDoc.filename}
-            onClose={() => setViewingDoc(null)}
-          />
-        )}
+      {viewingDoc ? (
+        <PdfViewer
+          documents={[viewingDoc]}
+          title={viewingDoc.filename}
+          onClose={() => setViewingDoc(null)}
+        />
+      ) : null}
 
-        {matches && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg">
-              <h2 className="font-semibold text-zinc-800 mb-1">Suggested discounts</h2>
-              <p className="text-sm text-zinc-500 mb-4">
-                Based on the document you just uploaded. Click one to start an application.
-              </p>
-              <div className="space-y-2 mb-4">
-                {matches.matches.map(m => {
-                  const d = discounts.find(x => x.id === m.discountId);
-                  if (!d) return null;
-                  return (
+      {matches ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
+          <div
+            className={`${cardClass} w-full max-w-md p-6 shadow-2xl`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="match-dialog-title"
+          >
+            <h2
+              id="match-dialog-title"
+              className="font-semibold text-slate-900"
+            >
+              Suggested scholarships
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Based on your document. Choose one to start an application with this
+              file attached.
+            </p>
+            <ul className="mt-4 max-h-[min(50vh,22rem)] space-y-2 overflow-y-auto">
+              {matches.matches.map((m) => {
+                const d = discounts.find((x) => x.id === m.discountId);
+                if (!d) return null;
+                return (
+                  <li key={m.discountId}>
                     <button
-                      key={m.discountId}
-                      onClick={() => applyToDiscount(d.id, d.name, matches.documentId)}
-                      className="w-full text-left border border-zinc-200 rounded-lg p-3 hover:bg-zinc-50 transition-colors"
+                      type="button"
+                      onClick={() =>
+                        applyToDiscount(d.id, d.name, matches.documentId)
+                      }
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-left text-sm transition hover:border-indigo-200 hover:bg-indigo-50/60"
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium text-zinc-800 text-sm">{d.name}</span>
-                        <span className="text-xs text-zinc-400">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium text-slate-900">
+                          {d.name}
+                        </span>
+                        <span className="shrink-0 text-xs font-medium text-slate-500 tabular-nums">
                           {Math.round(m.confidence * 100)}% match
                         </span>
                       </div>
-                      {m.reason && <p className="text-xs text-zinc-500">{m.reason}</p>}
+                      {m.reason ? (
+                        <p className="mt-1 text-xs text-slate-600">{m.reason}</p>
+                      ) : null}
                     </button>
-                  );
-                })}
-              </div>
-              <button
-                onClick={() => setMatches(null)}
-                className="text-sm px-4 py-2 rounded-lg border border-zinc-300 text-zinc-600 hover:bg-zinc-50"
-              >
-                Skip for now
-              </button>
-            </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <button
+              type="button"
+              onClick={() => setMatches(null)}
+              className={`${secondaryButtonClass} mt-6 w-full sm:w-auto`}
+            >
+              Skip for now
+            </button>
           </div>
-        )}
+        </div>
+      ) : null}
     </>
   );
 }

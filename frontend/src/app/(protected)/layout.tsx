@@ -16,9 +16,11 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
 function ProtectedShell({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   return (
-    <div className="flex min-h-screen bg-zinc-50">
+    <div className="flex min-h-screen bg-slate-200/40">
       <Sidebar role={user?.role || 'student'} />
-      <div className="flex-1 flex flex-col">{children}</div>
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col bg-gradient-to-b from-slate-100 via-white to-indigo-50/40">
+        {children}
+      </div>
     </div>
   );
 }
