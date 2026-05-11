@@ -117,8 +117,7 @@ export default function AdminDashboardPage() {
 
   const isAdmin = user?.role === 'admin';
 
-  /** Six tiles for everyone: user totals are numbers for admins, em dash for staff (API is admin-only). */
-  const statCards: {
+  const commonStatCards: {
     label: string;
     value: number | null;
     note: string;
@@ -150,21 +149,30 @@ export default function AdminDashboardPage() {
       note: 'All statuses',
       border: 'border-l-indigo-500',
     },
+  ];
+
+  const adminStatCards: typeof commonStatCards = [
     {
       label: 'Students',
-      value: isAdmin ? stats.totalUsers ?? 0 : null,
-      note: isAdmin ? 'Registered' : 'Totals visible to admins only',
+      value: stats.totalUsers ?? 0,
+      note: 'Registered',
       border: 'border-l-violet-500',
-      onNavigate: isAdmin ? () => router.push('/admin/users') : undefined,
+      onNavigate: () => router.push('/admin/users'),
     },
     {
       label: 'Staff / admin',
-      value: isAdmin ? stats.totalStaff ?? 0 : null,
-      note: isAdmin ? 'Accounts' : 'Totals visible to admins only',
+      value: stats.totalStaff ?? 0,
+      note: 'Accounts',
       border: 'border-l-slate-500',
-      onNavigate: isAdmin ? () => router.push('/admin/users') : undefined,
+      onNavigate: () => router.push('/admin/users'),
     },
   ];
+
+  const statCards = isAdmin ? [...commonStatCards, ...adminStatCards] : commonStatCards;
+
+  const statsGridClass = isAdmin
+    ? 'grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6'
+    : 'grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-4';
 
   return (
     <>
@@ -206,7 +214,7 @@ export default function AdminDashboardPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+            <div className={statsGridClass}>
               {statCards.map((card) => {
                 const interactive = Boolean(card.onNavigate);
                 const className = `${statCardBaseClass} border border-slate-200/90 border-l-4 text-left ${card.border} ${
