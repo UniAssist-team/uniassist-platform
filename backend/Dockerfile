@@ -14,7 +14,6 @@ ENV NODE_ENV=production \
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json package-lock.json ./
 COPY openapi.yaml ./
-COPY eng.traineddata ./
 COPY src ./src
 
 RUN mkdir -p /data /app/uploads
