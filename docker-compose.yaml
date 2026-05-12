@@ -1,0 +1,42 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: uniassist-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_PATH: /data/data.db
+      ALLOW_ORIGINS: ${ALLOW_ORIGINS:-http://localhost:3000}
+    volumes:
+      - backend-data:/data
+      - backend-uploads:/app/uploads
+    ports:
+      - "3001:3001"
+    networks:
+      - uniassist
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: uniassist-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      API_URL: http://backend:3001
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    networks:
+      - uniassist
+
+volumes:
+  backend-data:
+  backend-uploads:
+
+networks:
+  uniassist:
+    driver: bridge
