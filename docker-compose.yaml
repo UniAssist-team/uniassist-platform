@@ -8,14 +8,15 @@ services:
       NODE_ENV: production
       PORT: 3001
       DATABASE_PATH: /data/data.db
-      ALLOW_ORIGINS: ${ALLOW_ORIGINS:-http://localhost:3000}
+      ALLOW_ORIGINS: ${ALLOW_ORIGINS}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
     volumes:
       - backend-data:/data
       - backend-uploads:/app/uploads
-    ports:
-      - "3001:3001"
     networks:
-      - uniassist
+      - web
 
   frontend:
     build:
@@ -25,18 +26,16 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      API_URL: http://backend:3001
+      API_URL: http://uniassist-backend:3001
     depends_on:
       - backend
-    ports:
-      - "3000:3000"
     networks:
-      - uniassist
+      - web
 
 volumes:
   backend-data:
   backend-uploads:
 
 networks:
-  uniassist:
-    driver: bridge
+  web:
+    external: true

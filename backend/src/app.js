@@ -61,7 +61,8 @@ app.use("/", adminRouter);
 app.use(errorHandler);
 
 prewarmOcr().catch((err) => {
-	console.warn("[ocr] prewarm failed:", err.message);
+    const message = err instanceof Error ? err.message : String(err);
+	console.warn("[ocr] prewarm failed:", message);
 });
 
 export default app;
